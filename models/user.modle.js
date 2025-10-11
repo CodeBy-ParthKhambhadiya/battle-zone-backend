@@ -1,76 +1,76 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
+import { type } from "os";
 
 const userSchema = new mongoose.Schema({
   _id: {
     type: String,
     default: uuidv4, // generate UUID for each user
   },
-  firstName: { 
-    type: String, 
-    required: true 
+  firstName: {
+    type: String,
+    required: true
   },
-  lastName: { 
-    type: String, 
-    required: true 
+  lastName: {
+    type: String,
+    required: true
   },
-  username: { 
-    type: String, 
-    required: true, 
+  username: {
+    type: String,
+    required: true,
   },
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true 
+  email: {
+    type: String,
+    required: true,
+    unique: true
   },
-  password: { 
-    type: String, 
-    required: true 
+  password: {
+    type: String,
+    required: true
   },
-  mobile: { 
-    type: String 
+  mobile: {
+    type: String
   },
-  address: { 
-    type: String 
+  address: {
+    type: String
   },
-  gender: { 
-    type: String, 
-    enum: ["MALE", "FEMALE", "OTHER"], 
+  gender: {
+    type: String,
+    enum: ["MALE", "FEMALE", "OTHER"],
   },
-  gameId: { 
-    type: Number 
+  gameId: {
+    type: Number
   },
-  gameUserName: { 
-    type: String 
+  gameUserName: {
+    type: String
   },
-  profileImage: { 
-    type: String 
+  bio: {
+    type: String
   },
-  bio: { 
-    type: String 
+  role: {
+    type: String,
+    enum: ["PLAYER", "ADMIN", "ORGANIZER"],
+    default: "PLAYER"
   },
-  role: { 
-    type: String, 
-    enum: ["PLAYER", "ADMIN", "ORGANIZER"], 
-    default: "PLAYER" 
+  avatarFile: {
+    type: String
+  },  
+  emailOTP: {
+    type: String
   },
-
-  emailOTP: { 
-    type: String 
+  otpExpire: {
+    type: Date
   },
-  otpExpire: { 
-    type: Date 
-  },
-  isVerified: { 
-    type: Boolean, 
-    default: false 
+  isVerified: {
+    type: Boolean,
+    default: false
   },
   otpResendAt: {
-    type: Date, 
+    type: Date,
   },
-}, { 
-  timestamps: true, 
+}, {
+  timestamps: true,
 });
 
 const User = mongoose.model("User", userSchema);

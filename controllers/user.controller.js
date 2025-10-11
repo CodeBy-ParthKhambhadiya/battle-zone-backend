@@ -1,4 +1,5 @@
 import { getUserByIdService, resetPasswordService, updateUserService } from "../services/user.service.js";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 
 export const getUserByIdController = async (req, res) => {
   try {
@@ -8,7 +9,7 @@ export const getUserByIdController = async (req, res) => {
     return res.status(200).json({
       error: false,
       message: "User fetched successfully",
-      data: user, 
+      data: user,
     });
   } catch (error) {
     return res.status(400).json({
@@ -21,14 +22,17 @@ export const getUserByIdController = async (req, res) => {
 export const updateUserController = async (req, res) => {
   try {
     const userId = req.params.id;
-    const updateData = req.body;
-
+    const updateData = { ...req.body };
+    if (req.file) {
+      const avatarUrl = await uploadToCloudinary(req.file.path, "users");
+      updateData.avatarFile = avatarUrl; 
+    }
     const updatedUser = await updateUserService(userId, updateData);
 
     return res.status(200).json({
       error: false,
       message: "User updated successfully",
-      data: updatedUser, // full user including password and __v
+      data: updatedUser, 
     });
   } catch (error) {
     return res.status(400).json({

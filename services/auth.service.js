@@ -2,14 +2,16 @@ import bcrypt from "bcryptjs";
 import User from "../models/user.modle.js";
 import { generateStrongPassword } from "../utils/passwordGenerator.js";
 import { sendForgotPasswordEmail, sendOTPEmail } from "../utils/emailService.js";
+import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 
-  const OTP_RESEND_INTERVAL = 2 * 60 * 1000; // 2 minutes in ms
+const OTP_RESEND_INTERVAL = 2 * 60 * 1000; // 2 minutes in ms
 
 // Temporary in-memory store (you can replace with a PendingUser collection)
 const pendingUsers = new Map();
 
 export const registerUserService = async (userData) => {
-  const { email, password } = userData;
+  const { email, password, avatarFile } = userData;
+  console.log("🚀 ~ registerUserService ~ userData:", userData)
 
   // Check if user already exists in main DB
   const existingUser = await User.findOne({ email });
@@ -32,13 +34,17 @@ export const registerUserService = async (userData) => {
     await sendOTPEmail(email, otp);
     return { email, message: "OTP resent successfully" };
   }
-
+  let avatarUrl = undefined;
+  if (avatarFile) {
+    avatarUrl = await uploadToCloudinary(avatarFile.path, "users");
+  }
   // New pending user - generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpExpire = new Date(now + 2 * 60 * 1000);
 
   pendingUsers.set(email, {
     ...userData,
+    avatar: avatarUrl,
     password, // store plain password temporarily (will hash after OTP verification)
     otp,
     otpExpire,

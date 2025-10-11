@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 
 /**
+ * Upload a file to Cloudinary and optionally delete it locally
  * @param {string} filePath - Local path of the file
  * @param {string} folder - Cloudinary folder name
  * @param {boolean} deleteLocal - Delete local file after upload (default: true)
@@ -31,18 +32,20 @@ export const uploadToCloudinary = async (filePath, folder = 'users', deleteLocal
   }
 };
 
-
-const defaultUploadDir = path.resolve("src", "uploads");
+// ----------------------------
+// Direct upload folder (project root /uploads)
+// ----------------------------
+const UPLOAD_FOLDER = path.resolve("uploads");
 
 // Ensure folder exists
-if (!fs.existsSync(defaultUploadDir)) {
-  fs.mkdirSync(defaultUploadDir, { recursive: true });
-  console.log(`📁 Created upload directory: ${defaultUploadDir}`);
+if (!fs.existsSync(UPLOAD_FOLDER)) {
+  fs.mkdirSync(UPLOAD_FOLDER, { recursive: true });
+  console.log(`📁 Created upload directory: ${UPLOAD_FOLDER}`);
 }
 
-// Configure storage
-const defaultStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, defaultUploadDir),
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_FOLDER),
   filename: (req, file, cb) => {
     const uniqueName = `${Date.now()}-${file.originalname}`;
     cb(null, uniqueName);
@@ -59,30 +62,25 @@ const fileFilter = (req, file, cb) => {
   else cb(new Error("Only image files are allowed!"));
 };
 
-// Export default upload middleware
-export const upload = multer({
-  storage: defaultStorage,
-  fileFilter,
-});
+// Default upload middleware
+export const upload = multer({ storage, fileFilter });
 
-// ----------------------------
-// Factory function to create upload middleware for custom folders
-// ----------------------------
+// Factory function for custom folder (direct under /uploads)
 export const createUpload = (folderName) => {
-  const uploadDir = path.resolve("src", "uploads", folderName);
+  const folderPath = path.resolve("uploads", folderName);
 
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-    console.log(`📁 Created upload directory: ${uploadDir}`);
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+    console.log(`📁 Created upload directory: ${folderPath}`);
   }
 
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
+  const customStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, folderPath),
     filename: (req, file, cb) => {
       const uniqueName = `${Date.now()}-${file.originalname}`;
       cb(null, uniqueName);
     },
   });
 
-  return multer({ storage, fileFilter });
+  return multer({ storage: customStorage, fileFilter });
 };
