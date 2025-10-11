@@ -29,7 +29,6 @@ export const updateUserService = async (userId, updateData) => {
 
 export const resetPasswordService = async (userId, oldPassword, newPassword) => {
   const user = await User.findById(userId);
-  console.log("🚀 ~ resetPasswordService ~ user:", user)
   if (!user) throw new Error("User not found");
 
   // Check old password

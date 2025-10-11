@@ -12,7 +12,6 @@ export const protect = async (req, res, next) => {
     ) {
       // Extract token from "Bearer <token>"
       token = req.headers.authorization.split(" ")[1];
-      console.log("🚀 ~ prssotaaect ~ token:", token);
 
       // Verify token asynchronously
       const decoded = await new Promise((resolve, reject) => {
@@ -22,11 +21,9 @@ export const protect = async (req, res, next) => {
         });
       });
 
-      console.log("🚀 ~ ss ~ decoded:", decoded);
 
       // Find user by id (full user including password and __v)
       const user = await User.findOne({ _id: decoded.id });
-      console.log("🚀 ~ protect ~ user:", user)
       if (!user) {
         return res
           .status(401)

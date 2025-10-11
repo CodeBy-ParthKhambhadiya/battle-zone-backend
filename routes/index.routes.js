@@ -1,7 +1,7 @@
 import express from "express";
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
-// import tournamentRoutes from "./tournamentRoutes.js";
+import tournamentRoutes from "./tournament.routes.js";
 
 const router = express.Router();
 
@@ -13,6 +13,7 @@ router.get("/", (req, res) => {
 // Auth routes
 router.use("/auth", authRoutes);
 router.use("/user", userRoutes);
+router.use("/tournaments", tournamentRoutes);
 
 // Other routes (examples)
 // router.use("/users", userRoutes);

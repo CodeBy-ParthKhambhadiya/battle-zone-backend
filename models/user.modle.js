@@ -56,7 +56,6 @@ const userSchema = new mongoose.Schema({
     default: "PLAYER" 
   },
 
-  // ✅ OTP & verification fields
   emailOTP: { 
     type: String 
   },
@@ -68,7 +67,7 @@ const userSchema = new mongoose.Schema({
     default: false 
   },
   otpResendAt: {
-    type: Date, // tracks the next allowed OTP resend time
+    type: Date, 
   },
 }, { 
   timestamps: true, 
