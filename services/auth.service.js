@@ -10,16 +10,17 @@ const OTP_RESEND_INTERVAL = 2 * 60 * 1000; // 2 minutes in ms
 const pendingUsers = new Map();
 
 export const registerUserService = async (userData) => {
-  const { email, password, avatarFile } = userData;
-  console.log("🚀 ~ registerUserService ~ userData:", userData)
-
-  // Check if user already exists in main DB
-  const existingUser = await User.findOne({ email });
-  if (existingUser) throw new Error("User already exists");
-
-  // Check pendingUsers for resend
-  const pending = pendingUsers.get(email);
+  const { email, password, role = "PLAYER", avatarFile } = userData;
   const now = Date.now();
+
+  // ✅ Check if user already exists with this role
+  const existingUser = await User.findOne({ email, role });
+  if (existingUser) throw new Error(`A ${role} with this email already exists`);
+
+  // ✅ Use email + role as key for pending OTPs
+  const pendingKey = `${email}_${role}`;
+  const pending = pendingUsers.get(pendingKey);
+
   if (pending) {
     if (now - pending.otpSentAt < OTP_RESEND_INTERVAL) {
       throw new Error("OTP already sent. Please wait before requesting again.");
@@ -28,41 +29,52 @@ export const registerUserService = async (userData) => {
     // Resend OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     pending.otp = otp;
-    pending.otpExpire = new Date(now + 2 * 60 * 1000); // 10 minutes
+    pending.otpExpire = new Date(now + 10 * 60 * 1000); // 10 minutes
     pending.otpSentAt = now;
 
     await sendOTPEmail(email, otp);
-    return { email, message: "OTP resent successfully" };
+    return { email, role, message: "OTP resent successfully" };
   }
+
+  // ✅ Upload avatar if provided
   let avatarUrl = undefined;
   if (avatarFile) {
     avatarUrl = await uploadToCloudinary(avatarFile.path, "users");
   }
-  // New pending user - generate OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpire = new Date(now + 2 * 60 * 1000);
 
-  pendingUsers.set(email, {
+  // ✅ Create new pending user
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpExpire = new Date(now + 10 * 60 * 1000); // 10 minutes
+
+  pendingUsers.set(pendingKey, {
     ...userData,
     avatar: avatarUrl,
-    password, // store plain password temporarily (will hash after OTP verification)
+    password, // temporarily store plain password
     otp,
     otpExpire,
     otpSentAt: now,
   });
 
   await sendOTPEmail(email, otp);
-  return { email, message: "Registration initiated! OTP sent to email" };
+  return { email, role, message: "Registration initiated! OTP sent to email" };
 };
 
+
+// Verify OTP and create user
 export const verifyOTPService = async (email, otp) => {
-  const pending = pendingUsers.get(email);
-  if (!pending) throw new Error("No registration request found");
+  // Find pending entry by email — include role in the key dynamically
+  const pendingEntry = Array.from(pendingUsers.entries()).find(
+    ([key, value]) => key.startsWith(`${email}_`)
+  );
+
+  if (!pendingEntry) throw new Error("No registration request found");
+
+  const [pendingKey, pending] = pendingEntry;
 
   if (pending.otp !== otp) throw new Error("Invalid OTP");
   if (pending.otpExpire < Date.now()) throw new Error("OTP expired");
 
-  // ✅ OTP verified, create real user in DB
+  // ✅ OTP verified, hash password and create user
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(pending.password, salt);
 
@@ -75,19 +87,23 @@ export const verifyOTPService = async (email, otp) => {
     otpSentAt: undefined,
   });
 
-  // Remove pending user
-  pendingUsers.delete(email);
+  // Remove from pending map
+  pendingUsers.delete(pendingKey);
 
   return user;
 };
+
+// Resend OTP
 export const resendOTPService = async (email) => {
+  // Find pending entry by email
+  const pendingEntry = Array.from(pendingUsers.entries()).find(
+    ([key, value]) => key.startsWith(`${email}_`)
+  );
 
-  const pending = pendingUsers.get(email);
+  if (!pendingEntry) throw new Error("No registration found. Please register first.");
+
+  const [pendingKey, pending] = pendingEntry;
   const now = Date.now();
-
-  if (!pending) {
-    throw new Error("No registration found for this email. Please register first.");
-  }
 
   if (now - pending.otpSentAt < OTP_RESEND_INTERVAL) {
     const remaining = Math.ceil((OTP_RESEND_INTERVAL - (now - pending.otpSentAt)) / 1000);
@@ -97,16 +113,17 @@ export const resendOTPService = async (email) => {
   // Generate new OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   pending.otp = otp;
-  pending.otpExpire = new Date(now + 2 * 60 * 1000); // 10 min expiry
+  pending.otpExpire = new Date(now + 10 * 60 * 1000); // 10 min expiry
   pending.otpSentAt = now;
 
   // Update the map
-  pendingUsers.set(email, pending);
+  pendingUsers.set(pendingKey, pending);
 
-  await sendOTPEmail(email, otp);
+  await sendOTPEmail(pending.email, otp);
 
-  return { message: "OTP resent successfully" };
+  return { message: "OTP resent successfully", email: pending.email, role: pending.role };
 };
+
 
 export const loginUserService = async (email, password) => {
   const user = await User.findOne({ email });

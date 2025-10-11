@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true
+    // unique: true
   },
   password: {
     type: String,
@@ -72,6 +72,7 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+userSchema.index({ email: 1, role: 1 }, { unique: true });
 
 const User = mongoose.model("User", userSchema);
 export default User;

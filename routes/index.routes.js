@@ -2,6 +2,7 @@ import express from "express";
 import authRoutes from "./auth.routes.js";
 import userRoutes from "./user.routes.js";
 import tournamentRoutes from "./tournament.routes.js";
+import tournamentJoinRoutes from "./tournamentjoin.routes.js";
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.get("/", (req, res) => {
 router.use("/auth", authRoutes);
 router.use("/user", userRoutes);
 router.use("/tournaments", tournamentRoutes);
+router.use("/tournament-join", tournamentJoinRoutes);
 
 // Other routes (examples)
 // router.use("/users", userRoutes);
