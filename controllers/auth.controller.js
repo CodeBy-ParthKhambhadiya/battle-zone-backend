@@ -1,4 +1,4 @@
-import { forgotPasswordService, loginUserService, registerUserService, verifyOTPService } from "../services/auth.service.js";
+import { forgotPasswordService, loginUserService, registerUserService, resendOTPService, verifyOTPService } from "../services/auth.service.js";
 import { generateToken } from "../utils/jwt.js";
 
 export const registerUserController = async (req, res) => {
@@ -43,21 +43,29 @@ export const verifyOTPController = async (req, res) => {
     });
   }
 };
+
 export const resendOTPController = async (req, res) => {
   try {
     const { email } = req.body;
-    // Use the same registerUserService which handles resend logic
-    const result = await registerUserService({ email });
+
+    if (!email) {
+      throw new Error("Email is required to resend OTP");
+    }
+
+    const result = await resendOTPService(email);
+
     return res.status(200).json({
       error: false,
       message: result.message,
-      data: { email: result.email },
+      data: { email },
     });
   } catch (error) {
-    return res.status(400).json({ error: true, message: error.message });
+    return res.status(400).json({
+      error: true,
+      message: error.message,
+    });
   }
 };
-
 export const loginUserController = async (req, res) => {
    try {
     const { email, password } = req.body;

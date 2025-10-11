@@ -26,7 +26,7 @@ export const registerUserService = async (userData) => {
     // Resend OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     pending.otp = otp;
-    pending.otpExpire = new Date(now + 10 * 60 * 1000); // 10 minutes
+    pending.otpExpire = new Date(now + 2 * 60 * 1000); // 10 minutes
     pending.otpSentAt = now;
 
     await sendOTPEmail(email, otp);
@@ -35,7 +35,7 @@ export const registerUserService = async (userData) => {
 
   // New pending user - generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpire = new Date(now + 10 * 60 * 1000);
+  const otpExpire = new Date(now + 2 * 60 * 1000);
 
   pendingUsers.set(email, {
     ...userData,
@@ -73,6 +73,33 @@ export const verifyOTPService = async (email, otp) => {
   pendingUsers.delete(email);
 
   return user;
+};
+export const resendOTPService = async (email) => {
+
+  const pending = pendingUsers.get(email);
+  const now = Date.now();
+
+  if (!pending) {
+    throw new Error("No registration found for this email. Please register first.");
+  }
+
+  if (now - pending.otpSentAt < OTP_RESEND_INTERVAL) {
+    const remaining = Math.ceil((OTP_RESEND_INTERVAL - (now - pending.otpSentAt)) / 1000);
+    throw new Error(`Please wait ${remaining} seconds before requesting OTP again.`);
+  }
+
+  // Generate new OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  pending.otp = otp;
+  pending.otpExpire = new Date(now + 2 * 60 * 1000); // 10 min expiry
+  pending.otpSentAt = now;
+
+  // Update the map
+  pendingUsers.set(email, pending);
+
+  await sendOTPEmail(email, otp);
+
+  return { message: "OTP resent successfully" };
 };
 
 export const loginUserService = async (email, password) => {
