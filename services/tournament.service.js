@@ -26,7 +26,6 @@ export const createTournamentService = async (data, user) => {
     rules: data.rules ?? []
   };
 
-  console.log("🚀 ~ createTournamentService ~ tournamentData:", tournamentData);
 
   const tournament = await Tournament.create(tournamentData);
 
@@ -75,7 +74,6 @@ export const updateTournamentService = async (_id, data, organizerId) => {
         status: data.status ?? existingTournament.status,
         rules: data.rules ?? existingTournament.rules,
     };
-    console.log("🚀 ~ updateTournamentService ~ updatedData:", updatedData)
 
     const updatedTournament = await Tournament.findOneAndUpdate({ _id }, updatedData, { new: true });
     return updatedTournament;
