@@ -3,7 +3,7 @@ import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 
 export const getUserByIdController = async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.user.id;
     const user = await getUserByIdService(userId);
 
     return res.status(200).json({

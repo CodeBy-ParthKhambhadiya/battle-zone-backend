@@ -125,37 +125,32 @@ export const resendOTPService = async (email) => {
 };
 
 
-export const loginUserService = async (email, password) => {
-  const user = await User.findOne({ email });
-  if (!user) throw new Error("User not found");
-  const isMatch = await bcrypt.compare(password, user.password);
+export const loginUserService = async (email, password, role) => {
+  const user = await User.findOne({ email, role });
+  if (!user) throw new Error(`No ${role.toLowerCase()} account found for this email`);
 
-  if (!isMatch) {
-    throw new Error("Email or password do not match");
-  }
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) throw new Error("Email or password do not match");
+
   return user;
 };
 
-export const forgotPasswordService = async (email) => {
-  // 1️⃣ Check if user exists
-  const user = await User.findOne({ email });
-  if (!user) {
-    throw new Error("User not found");
-  }
+// 🟡 FORGOT PASSWORD SERVICE
+export const forgotPasswordService = async (email, role) => {
+  // 1️⃣ Check if user exists for this role
+  const user = await User.findOne({ email, role });
+  if (!user) throw new Error(`No ${role.toLowerCase()} account found for this email`);
 
   // 2️⃣ Generate a strong temporary password
   const tempPassword = generateStrongPassword();
 
-  // 3️⃣ Hash the new password
+  // 3️⃣ Hash and save
   const salt = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(tempPassword, salt);
-
-  // 4️⃣ Save user with updated password
   await user.save();
 
-  // 5️⃣ Send the temporary password via email
-  await sendForgotPasswordEmail(email, tempPassword);
+  // 4️⃣ Send the temporary password via email
+  await sendForgotPasswordEmail(email, tempPassword, role);
 
-  // 6️⃣ Return success info
-  return { email, tempPassword };
+  return { email, tempPassword, role };
 };

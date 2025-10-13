@@ -6,7 +6,7 @@ import { upload } from "../utils/cloudinaryUpload.js"; // Multer setup
 
 const router = express.Router();
 
-router.get("/me/:id", protect, getUserByIdController);
+router.get("/me", protect, getUserByIdController);
 router.put("/me/:id", protect, upload.single("avatarFile"), updateUserController);
 router.put("/reset-password", protect, resetPasswordController);
 

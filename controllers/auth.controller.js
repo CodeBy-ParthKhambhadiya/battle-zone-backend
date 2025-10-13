@@ -66,19 +66,20 @@ export const resendOTPController = async (req, res) => {
     });
   }
 };
-export const loginUserController = async (req, res) => {
-   try {
-    const { email, password } = req.body;
 
-    if (!email || !password) {
+export const loginUserController = async (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+
+    if (!email || !password || !role) {
       return res.status(400).json({
         error: true,
-        message: "Please provide both email and password",
+        message: "Please provide email, password, and role",
       });
     }
 
     // Call the service
-    const user = await loginUserService(email, password);
+    const user = await loginUserService(email, password, role);
 
     // Remove sensitive info
     const { password: pwd, __v, ...userData } = user.toObject();
@@ -91,7 +92,6 @@ export const loginUserController = async (req, res) => {
       message: "Logged in successfully!",
       data: userData,
     });
-
   } catch (error) {
     return res.status(400).json({
       error: true,
@@ -102,13 +102,16 @@ export const loginUserController = async (req, res) => {
 
 export const forgotPasswordController = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, role } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: true, message: "Email is required" });
+    if (!email || !role) {
+      return res.status(400).json({
+        error: true,
+        message: "Email and role are required",
+      });
     }
 
-    await forgotPasswordService(email);
+    await forgotPasswordService(email, role);
 
     return res.status(200).json({
       error: false,
