@@ -6,7 +6,7 @@ import { type } from "os";
 const userSchema = new mongoose.Schema({
   _id: {
     type: String,
-    default: uuidv4, // generate UUID for each user
+    default: uuidv4, 
   },
   firstName: {
     type: String,

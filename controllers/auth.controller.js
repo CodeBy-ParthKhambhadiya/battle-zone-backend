@@ -8,7 +8,7 @@ export const registerUserController = async (req, res) => {
     return res.status(200).json({
       error: false,
       message: `Registration initiated! OTP has been sent to ${email}`,
-      data: { email }, // we only return the email for reference
+      data: { email }, 
     });
   } catch (error) {
     return res.status(400).json({
@@ -22,13 +22,10 @@ export const verifyOTPController = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    // Call service to verify OTP and create real user
     const user = await verifyOTPService(email, otp);
 
-    // Remove sensitive fields
     const { password, __v, ...userData } = user.toObject();
 
-    // Generate JWT token
     userData.token = generateToken(user._id);
 
     return res.status(200).json({
@@ -78,13 +75,10 @@ export const loginUserController = async (req, res) => {
       });
     }
 
-    // Call the service
     const user = await loginUserService(email, password, role);
 
-    // Remove sensitive info
     const { password: pwd, __v, ...userData } = user.toObject();
 
-    // Add JWT token
     userData.token = generateToken(user._id);
 
     return res.status(200).json({

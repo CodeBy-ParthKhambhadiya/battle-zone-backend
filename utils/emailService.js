@@ -2,7 +2,6 @@ import nodemailer from "nodemailer";
 
 export const sendForgotPasswordEmail = async (to, newPassword, role = "USER") => {
   try {
-    // ✅ Transporter setup
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -10,11 +9,10 @@ export const sendForgotPasswordEmail = async (to, newPassword, role = "USER") =>
         pass: process.env.EMAIL_PASS,
       },
       tls: {
-        rejectUnauthorized: false, // helps avoid certain SSL errors on Gmail
+        rejectUnauthorized: false,
       },
     });
 
-    // ✅ Email Template
     const mailOptions = {
       from: `"BattleZone Support" <${process.env.EMAIL_USER}>`,
       to,
@@ -58,7 +56,6 @@ export const sendForgotPasswordEmail = async (to, newPassword, role = "USER") =>
       `,
     };
 
-    // ✅ Send email
     await transporter.sendMail(mailOptions);
     console.log(`✅ Password reset email sent successfully to ${to} (${role})`);
   } catch (err) {
@@ -76,7 +73,6 @@ export const sendForgotPasswordEmail = async (to, newPassword, role = "USER") =>
  */
 export const sendOTPEmail = async (to, otp) => {
   try {
-    // 1️⃣ Create transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -125,7 +121,6 @@ export const sendOTPEmail = async (to, otp) => {
       `,
     };
 
-    // 3️⃣ Send email
     await transporter.sendMail(mailOptions);
     console.log("✅ OTP email sent successfully to:", to);
   } catch (err) {

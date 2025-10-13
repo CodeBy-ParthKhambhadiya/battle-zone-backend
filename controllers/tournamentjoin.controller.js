@@ -52,8 +52,8 @@ export const getTournamentJoinsController = async (req, res) => {
 export const cancelJoinController = async (req, res) => {
   try {
     const { joinId } = req.body;
-    const requesterId = req.user._id; // from protect middleware
-    const requesterRole = req.user.role; // from protect middleware
+    const requesterId = req.user._id; 
+    const requesterRole = req.user.role;
 
     const result = await cancelJoinService(joinId, requesterId, requesterRole);
 

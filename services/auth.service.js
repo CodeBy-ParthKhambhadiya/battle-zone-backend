@@ -4,20 +4,17 @@ import { generateStrongPassword } from "../utils/passwordGenerator.js";
 import { sendForgotPasswordEmail, sendOTPEmail } from "../utils/emailService.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 
-const OTP_RESEND_INTERVAL = 2 * 60 * 1000; // 2 minutes in ms
+const OTP_RESEND_INTERVAL = 2 * 60 * 1000; 
 
-// Temporary in-memory store (you can replace with a PendingUser collection)
 const pendingUsers = new Map();
 
 export const registerUserService = async (userData) => {
   const { email, password, role = "PLAYER", avatarFile } = userData;
   const now = Date.now();
 
-  // ✅ Check if user already exists with this role
   const existingUser = await User.findOne({ email, role });
   if (existingUser) throw new Error(`A ${role} with this email already exists`);
 
-  // ✅ Use email + role as key for pending OTPs
   const pendingKey = `${email}_${role}`;
   const pending = pendingUsers.get(pendingKey);
 
@@ -26,7 +23,6 @@ export const registerUserService = async (userData) => {
       throw new Error("OTP already sent. Please wait before requesting again.");
     }
 
-    // Resend OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     pending.otp = otp;
     pending.otpExpire = new Date(now + 10 * 60 * 1000); // 10 minutes
@@ -36,20 +32,18 @@ export const registerUserService = async (userData) => {
     return { email, role, message: "OTP resent successfully" };
   }
 
-  // ✅ Upload avatar if provided
   let avatarUrl = undefined;
   if (avatarFile) {
     avatarUrl = await uploadToCloudinary(avatarFile.path, "users");
   }
 
-  // ✅ Create new pending user
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpExpire = new Date(now + 10 * 60 * 1000); // 10 minutes
 
   pendingUsers.set(pendingKey, {
     ...userData,
     avatar: avatarUrl,
-    password, // temporarily store plain password
+    password, 
     otp,
     otpExpire,
     otpSentAt: now,
@@ -60,7 +54,6 @@ export const registerUserService = async (userData) => {
 };
 
 
-// Verify OTP and create user
 export const verifyOTPService = async (email, otp) => {
   // Find pending entry by email — include role in the key dynamically
   const pendingEntry = Array.from(pendingUsers.entries()).find(
@@ -93,7 +86,6 @@ export const verifyOTPService = async (email, otp) => {
   return user;
 };
 
-// Resend OTP
 export const resendOTPService = async (email) => {
   // Find pending entry by email
   const pendingEntry = Array.from(pendingUsers.entries()).find(
@@ -135,21 +127,16 @@ export const loginUserService = async (email, password, role) => {
   return user;
 };
 
-// 🟡 FORGOT PASSWORD SERVICE
 export const forgotPasswordService = async (email, role) => {
-  // 1️⃣ Check if user exists for this role
   const user = await User.findOne({ email, role });
   if (!user) throw new Error(`No ${role.toLowerCase()} account found for this email`);
 
-  // 2️⃣ Generate a strong temporary password
   const tempPassword = generateStrongPassword();
 
-  // 3️⃣ Hash and save
   const salt = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(tempPassword, salt);
   await user.save();
 
-  // 4️⃣ Send the temporary password via email
   await sendForgotPasswordEmail(email, tempPassword, role);
 
   return { email, tempPassword, role };

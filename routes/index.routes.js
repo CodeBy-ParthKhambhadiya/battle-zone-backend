@@ -8,20 +8,15 @@ import privateChatRoutes from "./privatechat.routes.js"; // <-- import private c
 
 const router = express.Router();
 
-// Base route
 router.get("/", (req, res) => {
   res.status(200).json({ success: true, message: "API is running" });
 });
 
-// Auth routes
 router.use("/auth", authRoutes);
 router.use("/user", userRoutes);
 router.use("/tournaments", tournamentRoutes);
 router.use("/tournaments/chat", tournamentChatRoutes);
 router.use("/tournament-join", tournamentJoinRoutes);
 router.use("/private-chat", privateChatRoutes);
-// Other routes (examples)
-// router.use("/users", userRoutes);
-// router.use("/tournaments", tournamentRoutes);
 
 export default router;

@@ -10,10 +10,8 @@ export const protect = async (req, res, next) => {
       req.headers.authorization &&
       req.headers.authorization.startsWith("Bearer")
     ) {
-      // Extract token from "Bearer <token>"
       token = req.headers.authorization.split(" ")[1];
 
-      // Verify token asynchronously
       const decoded = await new Promise((resolve, reject) => {
         jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
           if (err) reject(err);
@@ -22,7 +20,6 @@ export const protect = async (req, res, next) => {
       });
 
 
-      // Find user by id (full user including password and __v)
       const user = await User.findOne({ _id: decoded.id });
       if (!user) {
         return res
@@ -30,7 +27,7 @@ export const protect = async (req, res, next) => {
           .json({ error: true, message: "User not found" });
       }
 
-      req.user = user; // attach user to request
+      req.user = user; 
       return next();
     } else {
       return res

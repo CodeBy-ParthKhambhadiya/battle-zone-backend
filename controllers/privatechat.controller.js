@@ -7,10 +7,8 @@ import {
   deleteMessageService,
 } from "../services/privatechat.service.js";
 
-// Create or get chat
 export const createChatController = async (req, res) => {
   try {
-    // Make sure req.user exists
     console.log("🚀 ~ createChatController ~ req.user:", req.user)
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "Unauthorized: User not found" });
@@ -33,7 +31,6 @@ export const createChatController = async (req, res) => {
   }
 };
 
-// Get all chats for user
 export const getChatsForUserController = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -44,7 +41,6 @@ export const getChatsForUserController = async (req, res) => {
   }
 };
 
-// Get single chat by ID
 export const getChatByIdController = async (req, res) => {
   try {
     const chatId = req.params.chatId;
@@ -56,7 +52,6 @@ export const getChatByIdController = async (req, res) => {
   }
 };
 
-// Add message
 export const addMessageController = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
@@ -77,7 +72,6 @@ export const addMessageController = async (req, res) => {
   }
 };
 
-// Delete chat
 export const deleteMessageController = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {
@@ -103,8 +97,6 @@ export const deleteMessageController = async (req, res) => {
 };
 
 
-
-// Edit a message
 export const editMessageController = async (req, res) => {
   try {
     if (!req.user || !req.user.id) {

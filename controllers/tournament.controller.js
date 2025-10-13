@@ -7,7 +7,6 @@ import {
     updateTournamentAfterStartService,
 } from "../services/tournament.service.js";
 
-// Create Tournament
 export const createTournamentController = async (req, res) => {
   try {
     const user = req.user;
@@ -38,7 +37,7 @@ export const createTournamentController = async (req, res) => {
 };
 
 
-// Get All Tournaments
+
 export const getAllTournamentsController = async (req, res) => {
     try {
         const tournaments = await getAllTournamentsService();
@@ -56,7 +55,7 @@ export const getAllTournamentsController = async (req, res) => {
     }
 };
 
-// Get Tournament by ID
+
 export const getTournamentByIdController = async (req, res) => {
     try {
         const tournament = await getTournamentByIdService(req.params.id);
@@ -73,7 +72,7 @@ export const getTournamentByIdController = async (req, res) => {
     }
 };
 
-// Update Tournament
+
 export const updateTournamentController = async (req, res) => {
     try {
         const user = req.user;
@@ -104,7 +103,6 @@ export const updateTournamentController = async (req, res) => {
     }
 };
 
-// Delete Tournament
 export const deleteTournamentController = async (req, res) => {
     try {
         const user = req.user;
@@ -138,7 +136,6 @@ export const updateTournamentAfterStartController = async (req, res) => {
 
     const result = await updateTournamentAfterStartService(tournamentId);
 
-    // If service returned a message only (tournament not started)
     if (result.message && !result.tournament) {
       return res.status(200).json({
         success: true,
@@ -146,7 +143,6 @@ export const updateTournamentAfterStartController = async (req, res) => {
       });
     }
 
-    // Tournament has started and data is returned
     return res.status(200).json({
       success: true,
       message: result.message,

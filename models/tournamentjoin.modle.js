@@ -4,16 +4,16 @@ import { v4 as uuidv4 } from "uuid";
 const tournamentJoinSchema = new mongoose.Schema({
   _id: {
     type: String,
-    default: uuidv4, // Automatically generate UUID
+    default: uuidv4, 
   },
   tournament: {
     type: String,
-    ref: "Tournament", // Referencing Tournament by UUID
+    ref: "Tournament", 
     required: true,
   },
   player: {
     type: String,
-    ref: "User", // Referencing User by UUID
+    ref: "User", 
     required: true,
   },
   status: {
@@ -26,7 +26,7 @@ const tournamentJoinSchema = new mongoose.Schema({
     default: false,
   },
   paymentProof: {
-    type: String, // URL or file path
+    type: String, 
   },
   joinedAt: {
     type: Date,

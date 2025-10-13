@@ -22,7 +22,6 @@ export const uploadToCloudinary = async (filePath, folder = 'users', deleteLocal
 
     return result.secure_url;
   } catch (err) {
-    // Delete local file even if upload fails
     if (deleteLocal) {
       fs.unlink(filePath, (err) => {
         if (err) console.error(`Failed to delete local file: ${err.message}`);
@@ -32,18 +31,13 @@ export const uploadToCloudinary = async (filePath, folder = 'users', deleteLocal
   }
 };
 
-// ----------------------------
-// Direct upload folder (project root /uploads)
-// ----------------------------
 const UPLOAD_FOLDER = path.resolve("uploads");
 
-// Ensure folder exists
 if (!fs.existsSync(UPLOAD_FOLDER)) {
   fs.mkdirSync(UPLOAD_FOLDER, { recursive: true });
   console.log(`📁 Created upload directory: ${UPLOAD_FOLDER}`);
 }
 
-// Multer storage configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_FOLDER),
   filename: (req, file, cb) => {
@@ -52,7 +46,6 @@ const storage = multer.diskStorage({
   },
 });
 
-// Optional file filter (images only)
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -62,10 +55,8 @@ const fileFilter = (req, file, cb) => {
   else cb(new Error("Only image files are allowed!"));
 };
 
-// Default upload middleware
 export const upload = multer({ storage, fileFilter });
 
-// Factory function for custom folder (direct under /uploads)
 export const createUpload = (folderName) => {
   const folderPath = path.resolve("uploads", folderName);
 

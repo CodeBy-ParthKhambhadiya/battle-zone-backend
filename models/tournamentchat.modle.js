@@ -30,7 +30,7 @@ const tournamentChatSchema = new mongoose.Schema({
     type: String,
     ref: "Tournament",
     required: true,
-    unique: true // one chat per tournament
+    unique: true 
   },
   organizer: {
     type: String,

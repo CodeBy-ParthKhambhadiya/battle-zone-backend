@@ -5,11 +5,10 @@ import {
 
 
 
-// Send a message in a tournament chat
 export const sendMessageController = async (req, res) => {
   try {
     const { tournamentId, message } = req.body;
-    const senderId = req.user._id; // from protect middleware
+    const senderId = req.user._id;
 
     const chat = await sendMessageService(tournamentId, senderId, message);
 
@@ -19,7 +18,6 @@ export const sendMessageController = async (req, res) => {
   }
 };
 
-// Get all messages of a tournament chat
 export const getMessagesController = async (req, res) => {
   try {
     const { tournamentId } = req.params;

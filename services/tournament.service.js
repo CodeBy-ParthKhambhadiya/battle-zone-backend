@@ -4,8 +4,6 @@ import TournamentChat from "../models/tournamentchat.modle.js";
 const calculateEntryFee = (prizePool, maxPlayers) => (maxPlayers > 0 ? prizePool / maxPlayers : 0);
 
 export const createTournamentService = async (data, user) => {
-  console.log("🚀 ~ createTournamentService ~ user:", user);
-  console.log("🚀 ~ createTournamentService ~ data:", data);
 
   if (user.role !== "ORGANIZER") {
     throw new Error("You must be an organizer to create a tournament");
@@ -17,7 +15,7 @@ export const createTournamentService = async (data, user) => {
   const tournamentData = {
     name: data.name ?? "Untitled Tournament",
     description: data.description ?? "",
-    organizer_id: user._id, // make sure this matches your Tournament model
+    organizer_id: user._id, 
     game_type: data.game_type ?? "Unknown",
     max_players: maxPlayers || 100,
     entry_fee: calculateEntryFee(prizePool, maxPlayers),
@@ -30,10 +28,8 @@ export const createTournamentService = async (data, user) => {
 
   console.log("🚀 ~ createTournamentService ~ tournamentData:", tournamentData);
 
-  // 1️⃣ Create tournament
   const tournament = await Tournament.create(tournamentData);
 
-  // 2️⃣ Automatically create chat for this tournament
   const chat = await TournamentChat.create({
     tournament: tournament._id,
     organizer: user._id,
@@ -42,7 +38,7 @@ export const createTournamentService = async (data, user) => {
     ]
   });
 
-  return { tournament, chat }; // return both
+  return { tournament, chat };
 };
 
 
@@ -85,7 +81,6 @@ export const updateTournamentService = async (_id, data, organizerId) => {
     return updatedTournament;
 };
 
-// Delete tournament
 export const deleteTournamentService = async (_id, organizerId) => {
 
     const existingTournament = await Tournament.findOne({ _id });
