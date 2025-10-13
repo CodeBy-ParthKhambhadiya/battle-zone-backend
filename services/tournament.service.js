@@ -1,21 +1,24 @@
 import Tournament from "../models/tournament.modle.js";
 import TournamentChat from "../models/tournamentchat.modle.js";
+import User from "../models/user.modle.js";
+import { sendTournamentCreatedEmail } from "../utils/emailService.js";
 
 const calculateEntryFee = (prizePool, maxPlayers) => (maxPlayers > 0 ? prizePool / maxPlayers : 0);
 
 export const createTournamentService = async (data, user) => {
-
+  // 1️⃣ Ensure only organizers can create tournaments
   if (user.role !== "ORGANIZER") {
     throw new Error("You must be an organizer to create a tournament");
   }
 
+  // 2️⃣ Prepare tournament data
   const maxPlayers = data.max_players ?? 0;
   const prizePool = data.prize_pool ?? 0;
 
   const tournamentData = {
     name: data.name ?? "Untitled Tournament",
     description: data.description ?? "",
-    organizer_id: user._id, 
+    organizer_id: user._id,
     game_type: data.game_type ?? "Unknown",
     max_players: maxPlayers || 100,
     entry_fee: calculateEntryFee(prizePool, maxPlayers),
@@ -23,22 +26,46 @@ export const createTournamentService = async (data, user) => {
     end_datetime: data.end_datetime ? new Date(data.end_datetime) : new Date(),
     status: data.status ?? "UPCOMING",
     prize_pool: prizePool,
-    rules: data.rules ?? []
+    rules: data.rules ?? [],
   };
 
-
+  // 3️⃣ Create tournament record
   const tournament = await Tournament.create(tournamentData);
 
+  // 4️⃣ Auto-create a tournament chat
   const chat = await TournamentChat.create({
     tournament: tournament._id,
     organizer: user._id,
     messages: [
-      { sender: user._id, message: "Welcome! Ask any questions about this tournament here." }
-    ]
+      {
+        sender: user._id,
+        message: "Welcome! Ask any questions about this tournament here.",
+      },
+    ],
   });
 
-  return { tournament, chat };
+  // 5️⃣ Send email to all registered players
+  try {
+    const players = await User.find({ role: "PLAYER" }).select("email firstName");
+    await Promise.all(
+      players.map((player) =>
+        sendTournamentCreatedEmail(player.email, tournament, user.firstName)
+      )
+    );
+    console.log(`✅ Emails sent to ${players.length} players`);
+  } catch (err) {
+    console.error("❌ Failed to send tournament creation emails:", err.message);
+  }
+
+  // 6️⃣ Return combined data
+  return {
+    success: true,
+    message: "Tournament created successfully!",
+    tournament,
+    chat,
+  };
 };
+
 
 
 export const getAllTournamentsService = async () => {
