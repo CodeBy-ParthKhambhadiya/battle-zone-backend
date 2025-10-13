@@ -5,6 +5,7 @@ import tournamentRoutes from "./tournament.routes.js";
 import tournamentJoinRoutes from "./tournamentjoin.routes.js";
 import tournamentChatRoutes from "./tournamentchat.routes.js";
 import privateChatRoutes from "./privatechat.routes.js"; // <-- import private chat routes
+import tournamentCommentRoutes from "./tournamentcomment.routes.js"; // <-- import private chat routes
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use("/tournaments", tournamentRoutes);
 router.use("/tournaments/chat", tournamentChatRoutes);
 router.use("/tournament-join", tournamentJoinRoutes);
 router.use("/private-chat", privateChatRoutes);
+router.use("/tournament-comment", tournamentCommentRoutes);
 
 export default router;
