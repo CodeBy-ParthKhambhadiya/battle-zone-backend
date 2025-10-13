@@ -4,32 +4,39 @@ import {
     getTournamentByIdService,
     updateTournamentService,
     deleteTournamentService,
+    updateTournamentAfterStartService,
 } from "../services/tournament.service.js";
 
 // Create Tournament
 export const createTournamentController = async (req, res) => {
-    try {
-        const user = req.user;
-        if (user.role !== "ORGANIZER") {
-            return res.status(403).json({
-                status: "fail",
-                message: "You must be an organizer to create a tournament",
-            });
-        }
+  try {
+    const user = req.user;
 
-        const tournament = await createTournamentService(req.body, user);
-        return res.status(201).json({
-            status: "success",
-            message: "Tournament created successfully!",
-            data: tournament,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            message: error.message,
-        });
+    if (user.role !== "ORGANIZER") {
+      return res.status(403).json({
+        status: "fail",
+        message: "You must be an organizer to create a tournament",
+      });
     }
+
+    const { tournament, chat } = await createTournamentService(req.body, user);
+
+    return res.status(201).json({
+      status: "success",
+      message: "Tournament and chat created successfully!",
+      data: {
+        tournament,
+        chat
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
 };
+
 
 // Get All Tournaments
 export const getAllTournamentsController = async (req, res) => {
@@ -122,4 +129,30 @@ export const deleteTournamentController = async (req, res) => {
             error: error.message,
         });
     }
+};
+
+
+export const updateTournamentAfterStartController = async (req, res) => {
+  try {
+    const { tournamentId } = req.body;
+
+    const result = await updateTournamentAfterStartService(tournamentId);
+
+    // If service returned a message only (tournament not started)
+    if (result.message && !result.tournament) {
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    }
+
+    // Tournament has started and data is returned
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result.tournament,
+    });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
 };

@@ -18,7 +18,7 @@ const tournamentJoinSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "done"],
+    enum: ["pending", "done","confirmed"],
     default: "pending",
   },
   paymentReceived: {

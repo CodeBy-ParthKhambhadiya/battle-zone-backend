@@ -1,33 +1,50 @@
 import Tournament from "../models/tournament.modle.js";
+import TournamentChat from "../models/tournamentchat.modle.js";
 
 const calculateEntryFee = (prizePool, maxPlayers) => (maxPlayers > 0 ? prizePool / maxPlayers : 0);
 
 export const createTournamentService = async (data, user) => {
+  console.log("🚀 ~ createTournamentService ~ user:", user);
+  console.log("🚀 ~ createTournamentService ~ data:", data);
 
-    if (user.role !== "ORGANIZER") {
-        throw new Error("You must be an organizer to create a tournament");
-    }
+  if (user.role !== "ORGANIZER") {
+    throw new Error("You must be an organizer to create a tournament");
+  }
 
-    const maxPlayers = data.max_players ?? 0;
-    const prizePool = data.prize_pool ?? 0;
+  const maxPlayers = data.max_players ?? 0;
+  const prizePool = data.prize_pool ?? 0;
 
-    const tournamentData = {
-        name: data.name ?? "Untitled Tournament",
-        description: data.description ?? "",
-        organizer_id: user._id,
-        game_type: data.game_type ?? "Unknown",
-        max_players: maxPlayers,
-        entry_fee: calculateEntryFee(prizePool, maxPlayers),
-        start_datetime: data.start_datetime ? new Date(data.start_datetime) : new Date(),
-        end_datetime: data.end_datetime ? new Date(data.end_datetime) : new Date(),
-        status: data.status ?? "UPCOMING",
-        prize_pool: prizePool,
-        rules: data.rules ?? [],
-    };
+  const tournamentData = {
+    name: data.name ?? "Untitled Tournament",
+    description: data.description ?? "",
+    organizer_id: user._id, // make sure this matches your Tournament model
+    game_type: data.game_type ?? "Unknown",
+    max_players: maxPlayers || 100,
+    entry_fee: calculateEntryFee(prizePool, maxPlayers),
+    start_datetime: data.start_datetime ? new Date(data.start_datetime) : new Date(),
+    end_datetime: data.end_datetime ? new Date(data.end_datetime) : new Date(),
+    status: data.status ?? "UPCOMING",
+    prize_pool: prizePool,
+    rules: data.rules ?? []
+  };
 
-    const tournament = await Tournament.create(tournamentData);
-    return tournament;
+  console.log("🚀 ~ createTournamentService ~ tournamentData:", tournamentData);
+
+  // 1️⃣ Create tournament
+  const tournament = await Tournament.create(tournamentData);
+
+  // 2️⃣ Automatically create chat for this tournament
+  const chat = await TournamentChat.create({
+    tournament: tournament._id,
+    organizer: user._id,
+    messages: [
+      { sender: user._id, message: "Welcome! Ask any questions about this tournament here." }
+    ]
+  });
+
+  return { tournament, chat }; // return both
 };
+
 
 export const getAllTournamentsService = async () => {
     return await Tournament.find().populate("organizer_id");
@@ -79,4 +96,48 @@ export const deleteTournamentService = async (_id, organizerId) => {
 
     const deletedTournament = await Tournament.findOneAndDelete({ _id });
     return deletedTournament;
+};
+
+
+export const updateTournamentAfterStartService = async (tournamentId) => {
+  const tournament = await Tournament.findById(tournamentId);
+  if (!tournament) throw new Error("Tournament not found");
+
+  const now = new Date();
+
+  if (now < tournament.start_datetime) {
+    const diffMs = tournament.start_datetime - now;
+
+    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diffMs / (1000 * 60)) % 60);
+    const seconds = Math.floor((diffMs / 1000) % 60);
+
+    // Build human-readable message
+    const parts = [];
+    if (days) parts.push(`${days} day${days > 1 ? "s" : ""}`);
+    if (hours) parts.push(`${hours} hour${hours > 1 ? "s" : ""}`);
+    if (minutes) parts.push(`${minutes} minute${minutes > 1 ? "s" : ""}`);
+    if (seconds) parts.push(`${seconds} second${seconds > 1 ? "s" : ""}`);
+
+    return {
+      message: `Tournament starts in ${parts.join(", ")}`,
+    };
+  }
+
+  const confirmedJoins = await TournamentJoin.countDocuments({
+    tournament: tournamentId,
+    status: "confirmed",
+  });
+
+  tournament.joinedPlayers = confirmedJoins;
+  tournament.prize_pool = tournament.entry_fee * confirmedJoins;
+
+  if (tournament.status === "UPCOMING") tournament.status = "ONGOING";
+
+  await tournament.save();
+  return {
+    message: "Tournament has started",
+    tournament,
+  };
 };

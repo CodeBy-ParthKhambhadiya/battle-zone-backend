@@ -54,12 +54,19 @@ const tournamentSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+
+    // NEW FIELDS
+    preJoined: {
+      type: Number,
+      default: 0, // number of players who requested to join (pending payment/approval)
+    },
+    joinedPlayers: {
+      type: Number,
+      default: 0, // number of confirmed players
+    },
   },
   {
-    timestamps: {
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    },
+    timestamps: true, // default createdAt and updatedAt
   }
 );
 

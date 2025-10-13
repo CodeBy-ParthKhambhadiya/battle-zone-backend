@@ -1,18 +1,17 @@
 import express from "express";
+import { protect } from "../middlewares/auth.middleware.js";
 import {
   preJoinController,
-  updateJoinController,
-  getJoinsController
+  confirmPaymentController,
+  getTournamentJoinsController,
+  cancelJoinController,
 } from "../controllers/tournamentjoin.controller.js";
-
-import { protect } from "../middlewares/auth.middleware.js"; // <-- imported middleware
 
 const router = express.Router();
 
-router.post("/prejoin", protect, preJoinController);
-
-router.put("/update/:id", protect, updateJoinController);
-
-router.get("/:tournamentId", protect, getJoinsController);
+router.post("/join", protect, preJoinController);
+router.post("/confirm", protect, confirmPaymentController);
+router.get("/tournament/:tournamentId", protect, getTournamentJoinsController);
+router.delete("/cancel", protect, cancelJoinController);
 
 export default router;
