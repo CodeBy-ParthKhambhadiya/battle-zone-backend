@@ -3,25 +3,36 @@ import { generateToken } from "../utils/jwt.js";
 
 export const registerUserController = async (req, res) => {
   try {
-    const { email } = await registerUserService(req.body);
-
+    const user = await registerUserService(req.body);
+    const { email } = user; 
+    const safeUser = user.toObject ? user.toObject() : { ...user };
+    delete safeUser.password;
+    delete safeUser.otp;
+    delete safeUser.otpExpire;
+    delete safeUser.otpSentAt;
     return res.status(200).json({
+      success: true,
       error: false,
       message: `Registration initiated! OTP has been sent to ${email}`,
-      data: { email }, 
+      data: safeUser, 
     });
   } catch (error) {
+    console.error("❌ registerUserController error:", error);
+
     return res.status(400).json({
+      success: false,
       error: true,
-      message: error.message,
+      message: error.message || "Something went wrong during registration",
     });
   }
 };
+
 
 export const verifyOTPController = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
+    // Call service
     const user = await verifyOTPService(email, otp);
 
     const { password, __v, ...userData } = user.toObject();
@@ -36,33 +47,50 @@ export const verifyOTPController = async (req, res) => {
   } catch (error) {
     return res.status(400).json({
       error: true,
-      message: error.message,
+      message: error?.message || "OTP verification failed",
+      code: error?.code || "OTP_ERROR",
     });
   }
 };
-
 export const resendOTPController = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, role = "PLAYER" } = req.body;
+    console.log("🚀 ~ resendOTPController ~ email:", email, "role:", role);
 
     if (!email) {
-      throw new Error("Email is required to resend OTP");
+      return res.status(400).json({
+        success: false,
+        error: true,
+        message: "Email is required to resend OTP.",
+      });
     }
 
-    const result = await resendOTPService(email);
+    // Call service
+    const result = await resendOTPService(email, role);
 
     return res.status(200).json({
+      success: true,
       error: false,
-      message: result.message,
-      data: { email },
+      message: result.message || "OTP resent successfully!",
+      data: {
+        email: result.email,
+        role: result.role,
+        otpExpiresAt: result.otpExpiresAt, // frontend can use for countdown
+      },
     });
   } catch (error) {
+    console.error("🚨 ~ resendOTPController error:", error.message);
+
     return res.status(400).json({
+      success: false,
       error: true,
+      code: error.code || "UNKNOWN_ERROR",
       message: error.message,
+      remaining: error.remaining || null, // seconds left for resend cooldown
     });
   }
 };
+
 
 export const loginUserController = async (req, res) => {
   try {

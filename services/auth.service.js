@@ -4,124 +4,142 @@ import { generateStrongPassword } from "../utils/passwordGenerator.js";
 import { sendForgotPasswordEmail, sendOTPEmail } from "../utils/emailService.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 
-const OTP_RESEND_INTERVAL = 2 * 60 * 1000; 
-
-const pendingUsers = new Map();
+const OTP_RESEND_INTERVAL = 2 * 60 * 1000;
+const OTP_EXPIRE_DURATION = 2 * 60 * 1000;
 
 export const registerUserService = async (userData) => {
-  const { email, password, role = "PLAYER", avatarFile } = userData;
-  const now = Date.now();
+  console.log("🚀 ~ registerUserService ~ userData:", userData);
+  const { email, password, role = "PLAYER", avatarFile, ...rest } = userData;
+
+  const now = new Date(); // Date object
 
   const existingUser = await User.findOne({ email, role });
-  if (existingUser) throw new Error(`A ${role} with this email already exists`);
 
-  const pendingKey = `${email}_${role}`;
-  const pending = pendingUsers.get(pendingKey);
+  if (existingUser) {
+    if (existingUser.isVerified) {
+      throw new Error(`A ${role} with this email already exists`);
+    }
 
-  if (pending) {
-    if (now - pending.otpSentAt < OTP_RESEND_INTERVAL) {
+    // OTP resend restriction
+    if (existingUser.otpSentAt && now - existingUser.otpSentAt < OTP_RESEND_INTERVAL) {
       throw new Error("OTP already sent. Please wait before requesting again.");
     }
 
+    // Regenerate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    pending.otp = otp;
-    pending.otpExpire = new Date(now + 10 * 60 * 1000); // 10 minutes
-    pending.otpSentAt = now;
+    existingUser.otp = otp;
+    existingUser.otpExpire = new Date(now.getTime() + OTP_EXPIRE_DURATION);
+    existingUser.otpSentAt = now;
 
+    await existingUser.save();
     await sendOTPEmail(email, otp);
-    return { email, role, message: "OTP resent successfully" };
+
+    return existingUser; // Return updated user object
   }
 
-  let avatarUrl = undefined;
+  // 2️⃣ Hash the password before creating a new user
+  const hashedPassword = await bcrypt.hash(password, 10); // 10 rounds of salt
+
+  // 3️⃣ Create new user
+  let avatarUrl;
   if (avatarFile) {
     avatarUrl = await uploadToCloudinary(avatarFile.path, "users");
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpire = new Date(now + 10 * 60 * 1000); // 10 minutes
 
-  pendingUsers.set(pendingKey, {
-    ...userData,
+  const newUser = await User.create({
+    email,
+    password: hashedPassword, // ✅ store hashed password
+    role,
     avatar: avatarUrl,
-    password, 
     otp,
-    otpExpire,
+    otpExpire: new Date(now.getTime() + OTP_EXPIRE_DURATION),
     otpSentAt: now,
+    isVerified: false,
+    ...rest,
   });
+
+  console.log("🚀 ~ registerUserService ~ newUser:", newUser);
 
   await sendOTPEmail(email, otp);
-  return { email, role, message: "Registration initiated! OTP sent to email" };
+
+  return newUser; // Return newly created user
 };
 
+export const verifyOTPService = async (email, otp, role = "PLAYER") => {
+  const user = await User.findOne({ email, role });
 
-export const verifyOTPService = async (email, otp) => {
-  // Find pending entry by email — include role in the key dynamically
-  const pendingEntry = Array.from(pendingUsers.entries()).find(
-    ([key, value]) => key.startsWith(`${email}_`)
-  );
+  if (!user) throw Object.assign(new Error("No registration request found"), { code: "NO_REGISTRATION" });
+  if (user.isVerified) throw Object.assign(new Error("Account is already verified"), { code: "ALREADY_VERIFIED" });
+  if (user.otp !== otp) throw Object.assign(new Error("Invalid OTP"), { code: "INVALID_OTP" });
+  if (user.otpExpire < Date.now()) throw Object.assign(new Error("OTP expired"), { code: "OTP_EXPIRED" });
 
-  if (!pendingEntry) throw new Error("No registration request found");
+  // Mark user as verified
+  user.isVerified = true;
+  user.otp = undefined;
+  user.otpExpire = undefined;
+  user.otpSentAt = undefined;
 
-  const [pendingKey, pending] = pendingEntry;
-
-  if (pending.otp !== otp) throw new Error("Invalid OTP");
-  if (pending.otpExpire < Date.now()) throw new Error("OTP expired");
-
-  // ✅ OTP verified, hash password and create user
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(pending.password, salt);
-
-  const user = await User.create({
-    ...pending,
-    password: hashedPassword,
-    isVerified: true,
-    emailOTP: undefined,
-    otpExpire: undefined,
-    otpSentAt: undefined,
-  });
-
-  // Remove from pending map
-  pendingUsers.delete(pendingKey);
-
+  await user.save();
   return user;
 };
+export const resendOTPService = async (email, role = "PLAYER") => {
+  const user = await User.findOne({ email, role });
+  console.log("🚀 ~ resendOTPService ~ user:", user)
 
-export const resendOTPService = async (email) => {
-  // Find pending entry by email
-  const pendingEntry = Array.from(pendingUsers.entries()).find(
-    ([key, value]) => key.startsWith(`${email}_`)
-  );
+  if (!user) {
+    throw Object.assign(new Error("No registration found"), { code: "NO_REGISTRATION" });
+  }
 
-  if (!pendingEntry) throw new Error("No registration found. Please register first.");
+  if (user.isVerified) {
+    throw Object.assign(new Error("Account is already verified"), { code: "ALREADY_VERIFIED" });
+  }
 
-  const [pendingKey, pending] = pendingEntry;
-  const now = Date.now();
+  const now = new Date();
 
-  if (now - pending.otpSentAt < OTP_RESEND_INTERVAL) {
-    const remaining = Math.ceil((OTP_RESEND_INTERVAL - (now - pending.otpSentAt)) / 1000);
-    throw new Error(`Please wait ${remaining} seconds before requesting OTP again.`);
+  // Safely get last OTP sent timestamp
+  const lastSent = user.otpSentAt ? new Date(user.otpSentAt).getTime() : 0;
+
+  // Check resend cooldown
+  if (lastSent && now.getTime() - lastSent < OTP_RESEND_INTERVAL) {
+    const remaining = Math.ceil((OTP_RESEND_INTERVAL - (now.getTime() - lastSent)) / 1000);
+    throw Object.assign(
+      new Error(`Please wait ${remaining} seconds before requesting OTP again.`),
+      { code: "OTP_RESEND_WAIT", remaining }
+    );
   }
 
   // Generate new OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  pending.otp = otp;
-  pending.otpExpire = new Date(now + 10 * 60 * 1000); // 10 min expiry
-  pending.otpSentAt = now;
 
-  // Update the map
-  pendingUsers.set(pendingKey, pending);
+  // ✅ Set OTP and timers
+  user.otp = otp;
+  user.otpSentAt = now; // store as Date
+  user.otpExpire = new Date(now.getTime() + OTP_EXPIRE_DURATION);
 
-  await sendOTPEmail(pending.email, otp);
+  await user.save();
 
-  return { message: "OTP resent successfully", email: pending.email, role: pending.role };
+  // Send OTP
+  await sendOTPEmail(email, otp);
+
+  return {
+    success: true,
+    message: "OTP resent successfully!",
+    email: user.email,
+    role: user.role,
+    otpExpiresAt: user.otpExpire,           // frontend countdown
+    otpResendAvailableAt: new Date(now.getTime() + OTP_RESEND_INTERVAL), // resend timer
+  };
 };
 
-
 export const loginUserService = async (email, password, role) => {
+  console.log("🚀 ~ loginUserService ~ password:", password)
   const user = await User.findOne({ email, role });
   if (!user) throw new Error(`No ${role.toLowerCase()} account found for this email`);
 
   const isMatch = await bcrypt.compare(password, user.password);
+  console.log("🚀 ~ loginUserService ~ isMatch:", isMatch)
   if (!isMatch) throw new Error("Email or password do not match");
 
   return user;
