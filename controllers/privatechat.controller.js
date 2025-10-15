@@ -5,6 +5,7 @@ import {
     addMessageService,
     editMessageService,
     deleteMessageService,
+    getAllUsersService,
 } from "../services/privatechat.service.js";
 
 export const createChatController = async (req, res) => {
@@ -120,4 +121,17 @@ export const editMessageController = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+};
+
+export const getAllUsersController = async (req, res) => {
+  try {
+    const currentUserId = req.user.id; // assuming you have auth middleware
+    console.log("🚀 ~ getAllUsersController ~ currentUserId:", currentUserId)
+    const users = await getAllUsersService(currentUserId);
+
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching all users:", error);
+    res.status(500).json({ message: error.message });
+  }
 };

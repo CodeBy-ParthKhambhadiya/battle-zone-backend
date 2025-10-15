@@ -6,12 +6,14 @@ import {
   addMessageController,
   deleteMessageController,
   editMessageController,
+  getAllUsersController,
 } from "../controllers/privatechat.controller.js";
 
 import { protect } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
+router.get("/all-users", protect, getAllUsersController);
 router.post("/create", protect, createChatController);
 router.get("/user", protect, getChatsForUserController);
 router.get("/:chatId", protect, getChatByIdController);

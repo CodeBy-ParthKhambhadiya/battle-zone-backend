@@ -1,4 +1,5 @@
 import PrivateChat from "../models/privatechat.model.js";
+import User from "../models/user.modle.js";
 
 export const createChatService = async ({ senderId, receiverId }) => {
   let chat = await PrivateChat.findOne({
@@ -71,4 +72,12 @@ export const editMessageService = async (chatId, messageId, senderId, newText) =
   await chat.save();
 
   return message;
+};
+
+
+export const getAllUsersService = async (currentUserId) => {
+  
+  const users = await User.find({ _id: { $ne: currentUserId } });
+
+  return users;
 };

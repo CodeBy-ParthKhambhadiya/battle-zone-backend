@@ -53,6 +53,12 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
     },
+    accountHolderName: {
+      type: String,
+    },
+    upiId: {
+      type: String,
+    },
     otp: {
       type: String, // store OTP as string
     },

@@ -23,9 +23,10 @@ export const updateUserController = async (req, res) => {
   try {
     const userId = req.params.id;
     const updateData = { ...req.body };
+    
     if (req.file) {
       const avatarUrl = await uploadToCloudinary(req.file.path, "users");
-      updateData.avatarFile = avatarUrl; 
+      updateData.avatar = avatarUrl; 
     }
     const updatedUser = await updateUserService(userId, updateData);
 
@@ -38,7 +39,7 @@ export const updateUserController = async (req, res) => {
     return res.status(400).json({
       error: true,
       message: error.message,
-    });
+    }); 
   }
 };
 
