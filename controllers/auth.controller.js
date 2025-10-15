@@ -30,21 +30,36 @@ export const registerUserController = async (req, res) => {
 
 export const verifyOTPController = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp, role } = req.body;
 
-    // Call service
-    const user = await verifyOTPService(email, otp);
+    if (!email || !otp) {
+      return res.status(400).json({
+        error: true,
+        message: "Email and OTP are required",
+        code: "MISSING_FIELDS",
+      });
+    }
 
-    const { password, __v, ...userData } = user.toObject();
 
+    // 1️⃣ Verify OTP using the service
+    const user = await verifyOTPService(email, otp, role);
+
+    // 2️⃣ Prepare user data (exclude sensitive info)
+    const { password, __v, otp: _otp, otpExpiresAt, otpSentAt, ...userData } = user.toObject();
+
+    // 3️⃣ Generate JWT token
     userData.token = generateToken(user._id);
 
+
+    // 4️⃣ Send response
     return res.status(200).json({
       error: false,
       message: "Email verified successfully! Registration complete.",
       data: userData,
     });
   } catch (error) {
+    console.error("🚨 verifyOTPController error:", error);
+
     return res.status(400).json({
       error: true,
       message: error?.message || "OTP verification failed",
@@ -52,10 +67,10 @@ export const verifyOTPController = async (req, res) => {
     });
   }
 };
+
 export const resendOTPController = async (req, res) => {
   try {
-    const { email, role = "PLAYER" } = req.body;
-    console.log("🚀 ~ resendOTPController ~ email:", email, "role:", role);
+    const { email, role} = req.body;
 
     if (!email) {
       return res.status(400).json({

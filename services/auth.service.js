@@ -8,7 +8,6 @@ const OTP_RESEND_INTERVAL = 2 * 60 * 1000;
 const OTP_EXPIRE_DURATION = 2 * 60 * 1000;
 
 export const registerUserService = async (userData) => {
-  console.log("🚀 ~ registerUserService ~ userData:", userData);
   const { email, password, role = "PLAYER", avatarFile, ...rest } = userData;
 
   const now = new Date(); // Date object
@@ -20,7 +19,6 @@ export const registerUserService = async (userData) => {
       throw new Error(`A ${role} with this email already exists`);
     }
 
-    // OTP resend restriction
     if (existingUser.otpSentAt && now - existingUser.otpSentAt < OTP_RESEND_INTERVAL) {
       throw new Error("OTP already sent. Please wait before requesting again.");
     }
@@ -60,33 +58,55 @@ export const registerUserService = async (userData) => {
     ...rest,
   });
 
-  console.log("🚀 ~ registerUserService ~ newUser:", newUser);
 
   await sendOTPEmail(email, otp);
 
   return newUser; // Return newly created user
 };
 
+
 export const verifyOTPService = async (email, otp, role = "PLAYER") => {
+  // 1️⃣ Find user by email and role
   const user = await User.findOne({ email, role });
+  if (!user) {
+    throw Object.assign(new Error("No registration found"), { code: "NO_REGISTRATION" });
+  }
 
-  if (!user) throw Object.assign(new Error("No registration request found"), { code: "NO_REGISTRATION" });
-  if (user.isVerified) throw Object.assign(new Error("Account is already verified"), { code: "ALREADY_VERIFIED" });
-  if (user.otp !== otp) throw Object.assign(new Error("Invalid OTP"), { code: "INVALID_OTP" });
-  if (user.otpExpire < Date.now()) throw Object.assign(new Error("OTP expired"), { code: "OTP_EXPIRED" });
+  // 2️⃣ Check if already verified
+  if (user.isVerified) {
+    throw Object.assign(new Error("Account is already verified"), { code: "ALREADY_VERIFIED" });
+  }
 
-  // Mark user as verified
+  // 3️⃣ Verify OTP
+  if (user.otp !== otp) {
+    // Invalid OTP
+    throw Object.assign(new Error("Invalid OTP"), { code: "INVALID_OTP" });
+  }
+
+  // 4️⃣ Check OTP expiration
+  if (!user.otpExpire || user.otpExpire.getTime() < Date.now()) {
+    // OTP expired
+    throw Object.assign(new Error("OTP expired"), {
+      code: "OTP_EXPIRED",
+      otpExpiresAt: user.otpExpire // frontend can use this for countdown
+    });
+  }
+
+  // 5️⃣ Mark user as verified
   user.isVerified = true;
   user.otp = undefined;
   user.otpExpire = undefined;
   user.otpSentAt = undefined;
 
   await user.save();
+
+  // ✅ Return user
   return user;
 };
+
+
 export const resendOTPService = async (email, role = "PLAYER") => {
   const user = await User.findOne({ email, role });
-  console.log("🚀 ~ resendOTPService ~ user:", user)
 
   if (!user) {
     throw Object.assign(new Error("No registration found"), { code: "NO_REGISTRATION" });
@@ -134,12 +154,10 @@ export const resendOTPService = async (email, role = "PLAYER") => {
 };
 
 export const loginUserService = async (email, password, role) => {
-  console.log("🚀 ~ loginUserService ~ password:", password)
   const user = await User.findOne({ email, role });
   if (!user) throw new Error(`No ${role.toLowerCase()} account found for this email`);
 
   const isMatch = await bcrypt.compare(password, user.password);
-  console.log("🚀 ~ loginUserService ~ isMatch:", isMatch)
   if (!isMatch) throw new Error("Email or password do not match");
 
   return user;
