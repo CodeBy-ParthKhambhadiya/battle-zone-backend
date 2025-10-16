@@ -9,9 +9,6 @@ export const createTournamentJoinService = async ({ tournamentId, playerId, paym
   const player = await User.findById(playerId);
   if (!player) throw new Error("Player not found");
 
-  const existingJoin = await TournamentJoin.findOne({ tournament: tournamentId, player: playerId });
-  if (existingJoin) throw new Error("Player has already requested to join this tournament");
-
   const join = await TournamentJoin.create({
     tournament: tournamentId,
     player: playerId,
@@ -25,25 +22,33 @@ export const createTournamentJoinService = async ({ tournamentId, playerId, paym
   return join;
 };
 
+
 export const confirmPaymentService = async (joinId) => {
   const join = await TournamentJoin.findById(joinId);
   if (!join) throw new Error("Join record not found");
 
+  // Check if already confirmed
+  if (join.status === "confirmed" && join.paymentReceived === true) {
+    return { message: "Payment is already confirmed for this join record." };
+  }
+
   const tournament = await Tournament.findById(join.tournament);
   if (!tournament) throw new Error("Tournament not found");
 
+  // Update join record
   join.status = "confirmed";
   join.paymentReceived = true;
   join.paymentConfirmedAt = new Date();
   await join.save();
 
-  
+  // Update tournament counts
   tournament.preJoined = Math.max(0, tournament.preJoined - 1);
   tournament.joinedPlayers += 1;
   await tournament.save();
 
   return join;
 };
+
 
 
 export const getTournamentJoinsService = async (tournamentId) => {
@@ -78,7 +83,7 @@ export const getTournamentJoinsService = async (tournamentId) => {
         "playerDetails.paymentProof": "$paymentProof",
         "playerDetails.joinedAt": "$joinedAt",
         "playerDetails.paymentConfirmedAt": "$paymentConfirmedAt",
-        "playerDetails.joinId": "$_id" 
+        "playerDetails.joinId": "$_id"
       }
     },
 
@@ -93,7 +98,7 @@ export const getTournamentJoinsService = async (tournamentId) => {
 
   if (!result || result.length === 0) throw new Error("Tournament not found");
 
-  return result[0]; 
+  return result[0];
 };
 
 export const cancelJoinService = async (joinId, requesterId, requesterRole) => {
@@ -114,4 +119,13 @@ export const cancelJoinService = async (joinId, requesterId, requesterRole) => {
   }
 
   throw new Error("Unauthorized");
+};
+export const getAllTournamentJoinsService = async () => {
+  const joins = await TournamentJoin.find()
+    .populate("player")      // Populate player info
+    .populate("tournament")  // Populate tournament info
+    .sort({ joinedAt: 1 })   // Sort by join date
+    .lean();                 // Convert Mongoose docs to plain objects
+
+  return joins;
 };

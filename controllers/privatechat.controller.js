@@ -58,7 +58,7 @@ export const addMessageController = async (req, res) => {
 
         const senderId = req.user.id;
         const { chatId, message } = req.body;
-
+       
         if (!chatId || !message) {
             return res.status(400).json({ message: "chatId and message are required" });
         }
@@ -126,7 +126,6 @@ export const editMessageController = async (req, res) => {
 export const getAllUsersController = async (req, res) => {
   try {
     const currentUserId = req.user.id; // assuming you have auth middleware
-    console.log("🚀 ~ getAllUsersController ~ currentUserId:", currentUserId)
     const users = await getAllUsersService(currentUserId);
 
     res.status(200).json(users);

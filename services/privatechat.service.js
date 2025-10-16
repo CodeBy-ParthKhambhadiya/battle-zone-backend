@@ -16,12 +16,31 @@ export const createChatService = async ({ senderId, receiverId }) => {
   return chat;
 };
 
+
 export const getChatsForUserService = async (userId) => {
-  return PrivateChat.find({
+  // Find all chats involving this user
+  const chats = await PrivateChat.find({
     $or: [{ senderId: userId }, { receiverId: userId }],
   }).sort({ updatedAt: -1 });
-};
 
+  // Populate the other user for each chat
+  const chatsWithOtherUser = await Promise.all(
+    chats.map(async (chat) => {
+      // Determine who is the other user
+      const otherUserId = chat.senderId.toString() === userId ? chat.receiverId : chat.senderId;
+
+      // Fetch other user details
+      const otherUser = await User.findById(otherUserId);
+
+      return {
+        ...chat.toObject(),
+        otherUser, // attach the other user's info
+      };
+    })
+  );
+
+  return chatsWithOtherUser;
+};
 export const getChatByIdService = async (chatId) => {
   return PrivateChat.findById(chatId);
 };

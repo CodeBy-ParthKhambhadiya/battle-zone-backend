@@ -34,7 +34,6 @@ export const replyCommentController = async (req, res) => {
   try {
     const userId = req.user._id;
     const { commentId, message } = req.body;
-    console.log("🚀 ~ replyCommentController ~ commentId:", commentId)
 
     const comment = await replyCommentService(commentId, userId, message);
     res.status(200).json({ success: true, comment });
