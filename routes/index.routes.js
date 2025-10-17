@@ -16,7 +16,7 @@ router.get("/", (req, res) => {
 router.use("/auth", authRoutes);
 router.use("/user", userRoutes);
 router.use("/tournaments", tournamentRoutes);
-router.use("/tournaments/chat", tournamentChatRoutes);
+router.use("/tournaments-chat", tournamentChatRoutes);
 router.use("/tournament-join", tournamentJoinRoutes);
 router.use("/private-chat", privateChatRoutes);
 router.use("/tournament-comment", tournamentCommentRoutes);

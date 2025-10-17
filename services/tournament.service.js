@@ -47,11 +47,11 @@ export const createTournamentService = async (data, user) => {
   // 5️⃣ Send email to all registered players
   try {
     const players = await User.find({ role: "PLAYER" }).select("email firstName");
-    await Promise.all(
-      players.map((player) =>
-        sendTournamentCreatedEmail(player.email, tournament, user.firstName)
-      )
-    );
+    // await Promise.all(
+    //   players.map((player) =>
+    //     sendTournamentCreatedEmail(player.email, tournament, user.firstName)
+    //   )
+    // );
     console.log(`✅ Emails sent to ${players.length} players`);
   } catch (err) {
     console.error("❌ Failed to send tournament creation emails:", err.message);
