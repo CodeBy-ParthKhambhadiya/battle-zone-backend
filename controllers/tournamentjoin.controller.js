@@ -53,8 +53,7 @@ export const getTournamentJoinsController = async (req, res) => {
 export const cancelJoinController = async (req, res) => {
   try {
     const { joinId } = req.body;
-    console.log("🚀 ~ cancelJoinController ~ joinId:", joinId)
-    const requesterId = req.user._id; 
+    const requesterId = req.user._id;
     const requesterRole = req.user.role;
 
     const result = await cancelJoinService(joinId, requesterId, requesterRole);
@@ -62,11 +61,16 @@ export const cancelJoinController = async (req, res) => {
     res.status(200).json({
       success: true,
       message: result.message,
+      data: result.deletedJoin, // ✅ include deleted join record
     });
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
+
 
 export const getAllTournamentJoinsController = async (req, res) => {
   try {

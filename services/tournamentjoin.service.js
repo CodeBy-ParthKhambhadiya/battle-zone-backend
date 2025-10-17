@@ -105,21 +105,51 @@ export const cancelJoinService = async (joinId, requesterId, requesterRole) => {
   const join = await TournamentJoin.findById(joinId);
   if (!join) throw new Error("Join record not found");
 
+  // Get related tournament
+  const tournament = await Tournament.findById(join.tournament);
+  if (!tournament) throw new Error("Tournament not found");
+
+  // Store a copy of the join before deletion
+  const deletedJoinData = join.toObject();
+
   if (requesterRole === "PLAYER") {
-    if (join.player !== requesterId) throw new Error("Unauthorized");
-    if (join.status !== "pending") throw new Error("Cannot cancel after confirmation");
+    if (join.player.toString() !== requesterId.toString())
+      throw new Error("Unauthorized");
+    if (join.status !== "pending")
+      throw new Error("Cannot cancel after confirmation");
+
+    // 🧮 Decrease preJoined count safely
+    if (tournament.preJoined > 0) {
+      tournament.preJoined -= 1;
+      await tournament.save();
+    }
 
     await join.deleteOne();
-    return { message: "Join cancelled successfully" };
+
+    return {
+      message: "Join cancelled successfully",
+      deletedJoin: deletedJoinData,
+    };
   }
 
   if (requesterRole === "ORGANIZER") {
+    // 🧮 Organizer cancelling a join also decreases preJoined
+    if (tournament.preJoined > 0) {
+      tournament.preJoined -= 1;
+      await tournament.save();
+    }
+
     await join.deleteOne();
-    return { message: "Join cancelled by organizer successfully" };
+
+    return {
+      message: "Join cancelled by organizer successfully",
+      deletedJoin: deletedJoinData,
+    };
   }
 
   throw new Error("Unauthorized");
 };
+
 export const getAllTournamentJoinsService = async () => {
   const joins = await TournamentJoin.find()
     .populate("player")      // Populate player info
