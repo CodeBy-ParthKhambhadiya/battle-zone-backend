@@ -4,30 +4,31 @@ import dotenv from "dotenv";
 
 dotenv.config(); // ensure env variables are loaded
 
-// 1️⃣ Create a reusable transporter
+// 1️⃣ Create a reusable transporter using SendGrid
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST,           // smtp.sendgrid.net
+  port: parseInt(process.env.SMTP_PORT), // 587
   auth: {
-    user: process.env.EMAIL_USER, // your Gmail address
-    pass: process.env.EMAIL_PASS, // your Gmail App Password
+    user: process.env.SMTP_USER,         // literally 'apikey'
+    pass: process.env.SMTP_PASS,         // your SendGrid API key
   },
   tls: {
-    rejectUnauthorized: false, // helps with cloud servers like Render
+    rejectUnauthorized: false,           // helps with cloud servers like Render
   },
-    connectionTimeout: 20000, // 20s
-
+  connectionTimeout: 20000,               // 20s timeout
 });
 
 // Optional: verify connection
 transporter.verify()
-  .then(() => console.log("✅ Gmail SMTP server is ready to send emails"))
-  .catch(err => console.error("❌ Gmail SMTP connection failed:", err.message));
+  .then(() => console.log("✅ SendGrid SMTP server is ready to send emails"))
+  .catch(err => console.error("❌ SendGrid SMTP connection failed:", err.message));
+
 
 // 2️⃣ Send Forgot Password Email
 export const sendForgotPasswordEmail = async (to, newPassword, role = "USER") => {
   try {
     const mailOptions = {
-      from: `"BattleZone Support" <${process.env.EMAIL_USER}>`,
+      from: `"BattleZone Support" <${process.env.EMAIL_FROM}>`,
       to,
       subject: `🔐 BattleZone Password Reset — ${role} Account Credentials`,
       html: `<p>Your new password: <strong>${newPassword}</strong></p>`,
@@ -45,7 +46,7 @@ export const sendForgotPasswordEmail = async (to, newPassword, role = "USER") =>
 export const sendOTPEmail = async (to, otp) => {
   try {
     const mailOptions = {
-      from: `"BattleZone Support" <${process.env.EMAIL_USER}>`,
+      from: `"BattleZone Support" <${process.env.EMAIL_FROM}>`,
       to,
       subject: "🔐 BattleZone OTP Verification",
       html: `<p>Your OTP is: <strong>${otp}</strong>. Valid for 10 minutes.</p>`,
@@ -63,7 +64,7 @@ export const sendOTPEmail = async (to, otp) => {
 export const sendTournamentCreatedEmail = async (to, tournament, organizerName) => {
   try {
     const mailOptions = {
-      from: `"BattleZone Notifications" <${process.env.EMAIL_USER}>`,
+      from: `"BattleZone Notifications" <${process.env.EMAIL_FROM}>`,
       to,
       subject: `🏆 New Tournament: ${tournament.name} is Live!`,
       html: `
