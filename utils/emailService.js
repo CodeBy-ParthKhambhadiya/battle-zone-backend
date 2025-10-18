@@ -14,6 +14,8 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false, // helps with cloud servers like Render
   },
+    connectionTimeout: 20000, // 20s
+
 });
 
 // Optional: verify connection
