@@ -1,5 +1,7 @@
 // utils/emailService.js
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
 
 // 1️⃣ Create a reusable transporter
 const transporter = nodemailer.createTransport({
