@@ -1,3 +1,4 @@
+// utils/emailService.js
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
@@ -83,7 +84,7 @@ export const sendOTPEmail = async (to, otp) => {
     };
 
     await transporter.sendMail(mailOptions);
-    console.log("✅ OTP email sent successfully to:", to);
+    console.log(`✅ OTP email sent to ${to}`);
   } catch (err) {
     console.error("❌ Error sending OTP email:", err.message);
     throw new Error("Failed to send OTP email.");
@@ -145,7 +146,7 @@ export const sendTournamentCreatedEmail = async (to, tournament, organizerName) 
     };
 
     await transporter.sendMail(mailOptions);
-    console.log(`✅ Tournament creation email sent to: ${to}`);
+    console.log(`✅ Tournament email sent to ${to}`);
   } catch (err) {
     console.error("❌ Error sending tournament email:", err.message);
     throw new Error("Failed to send tournament email");
