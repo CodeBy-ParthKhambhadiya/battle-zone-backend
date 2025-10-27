@@ -7,14 +7,26 @@ export const registerUserController = async (req, res) => {
     const { email } = user; 
     const safeUser = user.toObject ? user.toObject() : { ...user };
     delete safeUser.password;
-    delete safeUser.otp;
-    delete safeUser.otpExpire;
-    delete safeUser.otpSentAt;
+    // const safeUser = user.toObject ? user.toObject() : { ...user };
+    // delete safeUser.password;
+    // delete safeUser.otp;
+    // delete safeUser.otpExpire;
+    // delete safeUser.otpSentAt;
+
+    // 📨 Commented out OTP notification for now
+    // try {
+    //   await sendOTPEmail(email, user.otp);
+    //   console.log(`✅ OTP sent to ${email}`);
+    // } catch (err) {
+    //   console.error("❌ Error sending OTP email:", err.message);
+    // }
+
     return res.status(200).json({
       success: true,
       error: false,
-      message: `Registration initiated! OTP has been sent to ${email}`,
-      data: safeUser, 
+      // message: `Registration initiated! OTP has been sent to ${email}`,
+      message: `Registration successful! Please wait for admin verification before logging in.`,
+      data: safeUser,
     });
   } catch (error) {
     console.error("❌ registerUserController error:", error);
@@ -26,6 +38,7 @@ export const registerUserController = async (req, res) => {
     });
   }
 };
+
 
 
 export const verifyOTPController = async (req, res) => {
