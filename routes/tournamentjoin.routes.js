@@ -6,6 +6,7 @@ import {
   getTournamentJoinsController,
   cancelJoinController,
   getAllTournamentJoinsController,
+  getOrganizerTournamentsWithPendingPlayersController,
 } from "../controllers/tournamentjoin.controller.js";
 
 const router = express.Router();
@@ -15,5 +16,6 @@ router.post("/confirm", protect, confirmPaymentController);
 router.get("/tournament/:tournamentId", protect, getTournamentJoinsController);
 router.delete("/cancel", protect, cancelJoinController);
 router.get("/all-joins", getAllTournamentJoinsController);
+router.get("/pending",protect, getOrganizerTournamentsWithPendingPlayersController);
 
 export default router;

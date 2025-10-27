@@ -1,10 +1,11 @@
 import {
-    createTournamentService,
-    getAllTournamentsService,
-    getTournamentByIdService,
-    updateTournamentService,
-    deleteTournamentService,
-    updateTournamentAfterStartService,
+  createTournamentService,
+  getAllTournamentsService,
+  getTournamentByIdService,
+  updateTournamentService,
+  deleteTournamentService,
+  updateTournamentAfterStartService,
+  getTournamentsByOrganizerService,
 } from "../services/tournament.service.js";
 
 export const createTournamentController = async (req, res) => {
@@ -39,94 +40,94 @@ export const createTournamentController = async (req, res) => {
 
 
 export const getAllTournamentsController = async (req, res) => {
-    try {
-        const tournaments = await getAllTournamentsService();
-        return res.status(200).json({
-            status: "success",
-            data: tournaments,
-            message: "Tournament fatched successfully!",
+  try {
+    const tournaments = await getAllTournamentsService();
+    return res.status(200).json({
+      status: "success",
+      data: tournaments,
+      message: "Tournament fatched successfully!",
 
-        });
-    } catch (error) {
-        return res.status(500).json({
-            status: "error",
-            message: error.message,
-        });
-    }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
 };
 
 
 export const getTournamentByIdController = async (req, res) => {
-    try {
-        const tournament = await getTournamentByIdService(req.params.id);
-        return res.status(200).json({
-            status: "success",
-            data: tournament,
-            message: `Tournament fetched successfully`,
-        });
-    } catch (error) {
-        return res.status(404).json({
-            status: "fail",
-            message: error.message,
-        });
-    }
+  try {
+    const tournament = await getTournamentByIdService(req.params.id);
+    return res.status(200).json({
+      status: "success",
+      data: tournament,
+      message: `Tournament fetched successfully`,
+    });
+  } catch (error) {
+    return res.status(404).json({
+      status: "fail",
+      message: error.message,
+    });
+  }
 };
 
 
 export const updateTournamentController = async (req, res) => {
-    try {
-        const user = req.user;
-        if (!user || user.role !== "ORGANIZER") {
-            return res.status(403).json({
-                status: "fail",
-                message: "You must be an organizer to update a tournament",
-            });
-        }
-
-        const updatedTournament = await updateTournamentService(
-            req.params.id,
-            req.body,
-            user._id
-        );
-
-        return res.status(200).json({
-            status: "success",
-            message: "Tournament updated successfully",
-            data: updatedTournament,
-        });
-    } catch (error) {
-        return res.status(400).json({
-            status: "error",
-            message: "Failed to update tournament",
-            error: error.message,
-        });
+  try {
+    const user = req.user;
+    if (!user || user.role !== "ORGANIZER") {
+      return res.status(403).json({
+        status: "fail",
+        message: "You must be an organizer to update a tournament",
+      });
     }
+
+    const updatedTournament = await updateTournamentService(
+      req.params.id,
+      req.body,
+      user._id
+    );
+
+    return res.status(200).json({
+      status: "success",
+      message: "Tournament updated successfully",
+      data: updatedTournament,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      message: "Failed to update tournament",
+      error: error.message,
+    });
+  }
 };
 
 export const deleteTournamentController = async (req, res) => {
-    try {
-        const user = req.user;
-        if (!user || user.role !== "ORGANIZER") {
-            return res.status(403).json({
-                status: "fail",
-                message: "You must be an organizer to delete a tournament",
-            });
-        }
-
-        const deletedTournament = await deleteTournamentService(req.params.id, user._id);
-
-        return res.status(200).json({
-            status: "success",
-            message: "Tournament deleted successfully",
-            data: deletedTournament,
-        });
-    } catch (error) {
-        return res.status(400).json({
-            status: "error",
-            message: "Failed to delete tournament",
-            error: error.message,
-        });
+  try {
+    const user = req.user;
+    if (!user || user.role !== "ORGANIZER") {
+      return res.status(403).json({
+        status: "fail",
+        message: "You must be an organizer to delete a tournament",
+      });
     }
+
+    const deletedTournament = await deleteTournamentService(req.params.id, user._id);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Tournament deleted successfully",
+      data: deletedTournament,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      status: "error",
+      message: "Failed to delete tournament",
+      error: error.message,
+    });
+  }
 };
 
 
@@ -150,5 +151,23 @@ export const updateTournamentAfterStartController = async (req, res) => {
     });
   } catch (error) {
     return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const getOrganizerTournamentsController = async (req, res) => {
+  try {
+    const organizerId = req.user.id;
+    const tournaments = await getTournamentsByOrganizerService(organizerId);
+    res.status(200).json({
+      success: true,
+      count: tournaments.length,
+      data: tournaments,
+    });
+  } catch (error) {
+    console.error("Error fetching organizer tournaments:", error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch organizer tournaments",
+    });
   }
 };

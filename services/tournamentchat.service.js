@@ -1,16 +1,28 @@
 import TournamentChat from "../models/tournamentchat.modle.js";
 import TournamentJoin from "../models/tournamentjoin.modle.js";
+import Tournament from "../models/tournament.modle.js";
 
 export const sendMessageService = async (tournamentId, senderId, message) => {
   // Check if the user has joined the tournament and status is "confirmed"
-  const joinRecord = await TournamentJoin.findOne({
-    tournament: tournamentId,
-    player: senderId,
-    status: "confirmed",
-  });
+  const tournament = await Tournament.findById(tournamentId);
+  if (!tournament) {
+    throw new Error("Tournament not found");
+  }
 
-  if (!joinRecord) {
-    throw new Error("Sender is not confirmed for this tournament");
+  // Allow if sender is the organizer
+  if (tournament.organizer_id.toString() === senderId.toString()) {
+    // Organizer is allowed, skip joinRecord check
+  } else {
+    // Otherwise, ensure player is confirmed
+    const joinRecord = await TournamentJoin.findOne({
+      tournament: tournamentId,
+      player: senderId,
+      status: "confirmed",
+    });
+
+    if (!joinRecord) {
+      throw new Error("Sender is not confirmed for this tournament");
+    }
   }
 
   // Find the chat for the tournament

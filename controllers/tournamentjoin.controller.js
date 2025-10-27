@@ -4,6 +4,7 @@ import {
   getTournamentJoinsService,
   cancelJoinService,
   getAllTournamentJoinsService,
+  getOrganizerTournamentsWithPendingPlayersService,
 } from "../services/tournamentjoin.service.js";
 
 export const preJoinController = async (req, res) => {
@@ -82,5 +83,32 @@ export const getAllTournamentJoinsController = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+export const getOrganizerTournamentsWithPendingPlayersController = async (req, res) => {
+  try {
+    const organizerId = req.user?._id;
+
+    if (!organizerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Organizer ID is required",
+      });
+    }
+
+    const tournaments = await getOrganizerTournamentsWithPendingPlayersService(organizerId);
+
+    res.status(200).json({
+      success: true,
+      count: tournaments.length,
+      data: tournaments,
+    });
+  } catch (error) {
+    console.error("Error in getOrganizerTournamentsWithPendingPlayersController:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error",
+    });
   }
 };

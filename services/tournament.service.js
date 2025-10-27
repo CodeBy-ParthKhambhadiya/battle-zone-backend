@@ -161,3 +161,16 @@ export const updateTournamentAfterStartService = async (tournamentId) => {
     tournament,
   };
 };
+
+export const getTournamentsByOrganizerService = async (organizerId) => {
+  console.log("🚀 ~ getTournamentsByOrganizerService ~ organizerId:", organizerId)
+  try {
+    const tournaments = await Tournament.find({ organizer_id: organizerId }).sort({
+      createdAt: -1,
+    });
+    return tournaments;
+  } catch (error) {
+    console.error("Error in getTournamentsByOrganizerService:", error);
+    throw new Error("Failed to fetch organizer tournaments");
+  }
+};

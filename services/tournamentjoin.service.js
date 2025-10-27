@@ -159,3 +159,41 @@ export const getAllTournamentJoinsService = async () => {
 
   return joins;
 };
+
+export const getOrganizerTournamentsWithPendingPlayersService = async (organizerId) => {
+  if (!organizerId) {
+    throw new Error("Organizer ID is required");
+  }
+
+  // 1️⃣ Fetch all tournaments for this organizer
+  const tournaments = await Tournament.find({ organizer_id: organizerId })
+    .select("_id name game_type start_datetime end_datetime status prize_pool")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  if (!tournaments.length) return [];
+
+  // 2️⃣ Extract tournament IDs
+  const tournamentIds = tournaments.map((t) => t._id);
+
+  // 3️⃣ Get all pending joins for these tournaments
+  const pendingJoins = await TournamentJoin.find({
+    tournament: { $in: tournamentIds },
+    status: "pending",
+  })
+    .populate("player", "username email avatar")
+    .lean();
+
+  // 4️⃣ Merge pending players into their tournaments
+  const tournamentsWithPendingPlayers = tournaments.map((tournament) => {
+    const pendingPlayers = pendingJoins.filter(
+      (join) => join.tournament === tournament._id
+    );
+    return {
+      ...tournament,
+      pendingPlayers,
+    };
+  });
+
+  return tournamentsWithPendingPlayers;
+};
