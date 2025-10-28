@@ -49,6 +49,7 @@ export const registerUserService = async (userData) => {
 
   // ⚙️ Skipping OTP generation
   // const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const isVerified = role === "ORGANIZER" ? false : true;
 
   const newUser = await User.create({
     email,
@@ -58,7 +59,7 @@ export const registerUserService = async (userData) => {
     // otp,
     // otpExpire: new Date(now.getTime() + OTP_EXPIRE_DURATION),
     // otpSentAt: now,
-    isVerified: true, // ✅ Directly mark as verified since OTP is skipped
+    isVerified, // ✅ Directly mark as verified since OTP is skipped
     ...rest,
   });
 
