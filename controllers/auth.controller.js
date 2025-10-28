@@ -150,25 +150,62 @@ export const loginUserController = async (req, res) => {
   }
 };
 
+// export const forgotPasswordController = async (req, res) => {
+//   try {
+//     const { email, role } = req.body;
+
+//     if (!email || !role) {
+//       return res.status(400).json({
+//         error: true,
+//         message: "Email and role are required",
+//       });
+//     }
+
+//     await forgotPasswordService(email, role);
+
+//     return res.status(200).json({
+//       error: false,
+//       message: `A temporary password has been sent to ${email}. Please check your inbox.`,
+//     });
+//   } catch (error) {
+//     console.error("❌ Forgot password error:", error);
+//     return res.status(500).json({ error: true, message: error.message });
+//   }
+// };
+
 export const forgotPasswordController = async (req, res) => {
   try {
-    const { email, role } = req.body;
+    const { email, mobile, role, newPassword } = req.body;
 
-    if (!email || !role) {
+    console.log("🚀 ~ forgotPasswordController ~ email:", email);
+    console.log("🚀 ~ forgotPasswordController ~ mobile:", mobile);
+    console.log("🚀 ~ forgotPasswordController ~ role:", role);
+    console.log("🚀 ~ forgotPasswordController ~ newPassword:", newPassword);
+
+    // ✅ Validate required inputs
+    if ((!email && !mobile) || !role || !newPassword) {
       return res.status(400).json({
         error: true,
-        message: "Email and role are required",
+        message: "Email or mobile, role, and new password are required.",
       });
     }
 
-    await forgotPasswordService(email, role);
+    // ✅ Call service (pass as an object)
+    const result = await forgotPasswordService({ email, mobile, role, newPassword });
+
+    if (result.error) {
+      return res.status(404).json(result);
+    }
 
     return res.status(200).json({
       error: false,
-      message: `A temporary password has been sent to ${email}. Please check your inbox.`,
+      message: result.message || "Password updated successfully. You can now log in with your new password.",
     });
   } catch (error) {
     console.error("❌ Forgot password error:", error);
-    return res.status(500).json({ error: true, message: error.message });
+    return res.status(500).json({
+      error: true,
+      message: error.message || "Something went wrong while resetting the password.",
+    });
   }
 };

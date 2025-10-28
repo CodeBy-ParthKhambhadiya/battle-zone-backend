@@ -20,5 +20,5 @@ router.use("/tournaments-chat", tournamentChatRoutes);
 router.use("/tournament-join", tournamentJoinRoutes);
 router.use("/private-chat", privateChatRoutes);
 router.use("/tournament-comment", tournamentCommentRoutes);
-
+  
 export default router;

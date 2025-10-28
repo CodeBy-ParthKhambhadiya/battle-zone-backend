@@ -105,26 +105,31 @@ export const cancelJoinService = async (joinId, requesterId, requesterRole) => {
   const join = await TournamentJoin.findById(joinId);
   if (!join) throw new Error("Join record not found");
 
-  // Get related tournament
+  // 🏆 Fetch related tournament
   const tournament = await Tournament.findById(join.tournament);
   if (!tournament) throw new Error("Tournament not found");
 
-  // Store a copy of the join before deletion
+  // 🧾 Store data before deletion
   const deletedJoinData = join.toObject();
 
+  // 🧍 For Player Requests
   if (requesterRole === "PLAYER") {
-    if (join.player.toString() !== requesterId.toString())
+    if (join.player.toString() !== requesterId.toString()) {
       throw new Error("Unauthorized");
-    if (join.status !== "pending")
-      throw new Error("Cannot cancel after confirmation");
+    }
 
-    // 🧮 Decrease preJoined count safely
+    // Player can cancel only if pending (not confirmed)
+    if (join.status !== "pending") {
+      throw new Error("Cannot cancel after confirmation");
+    }
+
+    // 🔽 Decrease preJoined safely
     if (tournament.preJoined > 0) {
       tournament.preJoined -= 1;
-      await tournament.save();
     }
 
     await join.deleteOne();
+    await tournament.save();
 
     return {
       message: "Join cancelled successfully",
@@ -132,17 +137,22 @@ export const cancelJoinService = async (joinId, requesterId, requesterRole) => {
     };
   }
 
+  // 🧑‍💼 For Organizer Requests
   if (requesterRole === "ORGANIZER") {
-    // 🧮 Organizer cancelling a join also decreases preJoined
-    if (tournament.preJoined > 0) {
+    // 🟢 If the player was only pre-joined (pending approval)
+    if (join.status === "pending" && tournament.preJoined > 0) {
       tournament.preJoined -= 1;
-      await tournament.save();
+    }
+    // 🟣 If the player was already confirmed
+    else if (join.status === "confirmed" && tournament.joinedPlayers > 0) {
+      tournament.joinedPlayers -= 1;
     }
 
     await join.deleteOne();
+    await tournament.save();
 
     return {
-      message: "Join cancelled by organizer successfully",
+      message: `Join cancelled by organizer successfully (${join.status})`,
       deletedJoin: deletedJoinData,
     };
   }
@@ -167,7 +177,6 @@ export const getOrganizerTournamentsWithPendingPlayersService = async (organizer
 
   // 1️⃣ Fetch all tournaments for this organizer
   const tournaments = await Tournament.find({ organizer_id: organizerId })
-    .select("_id name game_type start_datetime end_datetime status prize_pool")
     .sort({ createdAt: -1 })
     .lean();
 
@@ -176,24 +185,30 @@ export const getOrganizerTournamentsWithPendingPlayersService = async (organizer
   // 2️⃣ Extract tournament IDs
   const tournamentIds = tournaments.map((t) => t._id);
 
-  // 3️⃣ Get all pending joins for these tournaments
-  const pendingJoins = await TournamentJoin.find({
+  // 3️⃣ Fetch all joins (both pending + confirmed)
+  const joins = await TournamentJoin.find({
     tournament: { $in: tournamentIds },
-    status: "pending",
+    status: { $in: ["pending", "confirmed"] },
   })
-    .populate("player", "username email avatar")
+    .populate("player")
     .lean();
 
-  // 4️⃣ Merge pending players into their tournaments
-  const tournamentsWithPendingPlayers = tournaments.map((tournament) => {
-    const pendingPlayers = pendingJoins.filter(
-      (join) => join.tournament === tournament._id
+  // 4️⃣ Merge pending + confirmed players into their tournaments
+  const tournamentsWithPlayers = tournaments.map((tournament) => {
+    const pendingPlayers = joins.filter(
+      (join) => join.tournament.toString() === tournament._id.toString() && join.status === "pending"
     );
+    const confirmedPlayers = joins.filter(
+      (join) => join.tournament.toString() === tournament._id.toString() && join.status === "confirmed"
+    );
+
     return {
       ...tournament,
       pendingPlayers,
+      confirmedPlayers,
+      joinedPlayersCount: confirmedPlayers.length,
     };
   });
 
-  return tournamentsWithPendingPlayers;
+  return tournamentsWithPlayers;
 };

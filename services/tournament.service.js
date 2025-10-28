@@ -1,5 +1,6 @@
 import Tournament from "../models/tournament.modle.js";
 import TournamentChat from "../models/tournamentchat.modle.js";
+import TournamentJoin from "../models/tournamentjoin.modle.js";
 import User from "../models/user.modle.js";
 import { sendTournamentCreatedEmail } from "../utils/emailService.js";
 
@@ -27,6 +28,10 @@ export const createTournamentService = async (data, user) => {
     status: data.status ?? "UPCOMING",
     prize_pool: prizePool,
     rules: data.rules ?? [],
+
+    // 🆕 Added fields
+    roomID: data.roomID ?? null,
+    password: data.password ?? null,
   };
 
   // 3️⃣ Create tournament record
@@ -79,32 +84,51 @@ export const getTournamentByIdService = async (_id) => {
 };
 
 export const updateTournamentService = async (_id, data, organizerId) => {
-  
-    const existingTournament = await Tournament.findOne({ _id });
-    if (!existingTournament) throw new Error("Tournament not found");
-    if (existingTournament.organizer_id.toString() !== organizerId.toString()) {
-        throw new Error("Unauthorized to update this tournament");
-    }
+  // 1️⃣ Check if the tournament exists
+  const existingTournament = await Tournament.findOne({ _id });
+  if (!existingTournament) throw new Error("Tournament not found");
 
-    const maxPlayers = data.max_players ?? existingTournament.max_players;
-    const prizePool = data.prize_pool ?? existingTournament.prize_pool;
+  // 2️⃣ Verify the organizer
+  if (existingTournament.organizer_id.toString() !== organizerId.toString()) {
+    throw new Error("Unauthorized to update this tournament");
+  }
 
-    const updatedData = {
-        name: data.name ?? existingTournament.name,
-        description: data.description ?? existingTournament.description,
-        game_type: data.game_type ?? existingTournament.game_type,
-        max_players: maxPlayers,
-        prize_pool: prizePool,
-        entry_fee: calculateEntryFee(prizePool, maxPlayers),
-        start_datetime: data.start_datetime ? new Date(data.start_datetime) : existingTournament.start_datetime,
-        end_datetime: data.end_datetime ? new Date(data.end_datetime) : existingTournament.end_datetime,
-        status: data.status ?? existingTournament.status,
-        rules: data.rules ?? existingTournament.rules,
-    };
+  // 3️⃣ Handle numeric values safely
+  const maxPlayers = data.max_players ?? existingTournament.max_players;
+  const prizePool = data.prize_pool ?? existingTournament.prize_pool;
 
-    const updatedTournament = await Tournament.findOneAndUpdate({ _id }, updatedData, { new: true });
-    return updatedTournament;
+  // 4️⃣ Prepare update payload
+  const updatedData = {
+    name: data.name ?? existingTournament.name,
+    description: data.description ?? existingTournament.description,
+    game_type: data.game_type ?? existingTournament.game_type,
+    max_players: maxPlayers,
+    prize_pool: prizePool,
+    entry_fee: calculateEntryFee(prizePool, maxPlayers),
+    start_datetime: data.start_datetime
+      ? new Date(data.start_datetime)
+      : existingTournament.start_datetime,
+    end_datetime: data.end_datetime
+      ? new Date(data.end_datetime)
+      : existingTournament.end_datetime,
+    status: data.status ?? existingTournament.status,
+    rules: data.rules ?? existingTournament.rules,
+
+    // 🆕 Add roomID and password update support
+    roomID: data.roomID ?? existingTournament.roomID,
+    password: data.password ?? existingTournament.password,
+  };
+
+  // 5️⃣ Update tournament in DB
+  const updatedTournament = await Tournament.findOneAndUpdate(
+    { _id },
+    updatedData,
+    { new: true }
+  );
+
+  return updatedTournament;
 };
+
 
 export const deleteTournamentService = async (_id, organizerId) => {
 

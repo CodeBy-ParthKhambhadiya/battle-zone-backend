@@ -179,17 +179,47 @@ export const loginUserService = async (email, password, role) => {
 };
 
 
-export const forgotPasswordService = async (email, role) => {
-  const user = await User.findOne({ email, role });
-  if (!user) throw new Error(`No ${role.toLowerCase()} account found for this email`);
+// export const forgotPasswordService = async (email, role) => {
+//   const user = await User.findOne({ email, role });
+//   if (!user) throw new Error(`No ${role.toLowerCase()} account found for this email`);
 
-  const tempPassword = generateStrongPassword();
+//   const tempPassword = generateStrongPassword();
 
-  const salt = await bcrypt.genSalt(10);
-  user.password = await bcrypt.hash(tempPassword, salt);
-  await user.save();
+//   const salt = await bcrypt.genSalt(10);
+//   user.password = await bcrypt.hash(tempPassword, salt);
+//   await user.save();
 
-  await sendForgotPasswordEmail(email, tempPassword, role);
+//   await sendForgotPasswordEmail(email, tempPassword, role);
 
-  return { email, tempPassword, role };
+//   return { email, tempPassword, role };
+// };
+export const forgotPasswordService = async ({ email, mobile, role, newPassword }) => {
+  try {
+    // ✅ Find user by email, mobile, and role
+    const user = await User.findOne({ email, mobile, role });
+
+    if (!user) {
+      return {
+        error: true,
+        message: `No ${role.toLowerCase()} account found matching this email and mobile number.`,
+      };
+    }
+
+    // ✅ Hash and update password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    await user.save();
+
+    return {
+      error: false,
+      message: "Password updated successfully.",
+    };
+  } catch (error) {
+    console.error("⚠️ forgotPasswordService error:", error);
+    return {
+      error: true,
+      message: "Failed to update password. Please try again later.",
+    };
+  }
 };

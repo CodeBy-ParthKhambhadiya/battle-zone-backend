@@ -5,7 +5,7 @@ const tournamentSchema = new mongoose.Schema(
   {
     _id: {
       type: String,
-      default: uuidv4, 
+      default: uuidv4,
     },
     name: {
       type: String,
@@ -54,14 +54,23 @@ const tournamentSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-
     preJoined: {
       type: Number,
-      default: 0, 
+      default: 0,
     },
     joinedPlayers: {
       type: Number,
-      default: 0, 
+      default: 0,
+    },
+
+    // 🆕 Added fields
+    roomID: {
+      type: String,
+      default: null, // or you can make it required if you want
+    },
+    password: {
+      type: String,
+      default: null, // you can also hash it later if needed
     },
   },
   {
