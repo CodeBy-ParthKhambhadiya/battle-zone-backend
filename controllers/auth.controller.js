@@ -177,11 +177,6 @@ export const forgotPasswordController = async (req, res) => {
   try {
     const { email, mobile, role, newPassword } = req.body;
 
-    console.log("🚀 ~ forgotPasswordController ~ email:", email);
-    console.log("🚀 ~ forgotPasswordController ~ mobile:", mobile);
-    console.log("🚀 ~ forgotPasswordController ~ role:", role);
-    console.log("🚀 ~ forgotPasswordController ~ newPassword:", newPassword);
-
     // ✅ Validate required inputs
     if ((!email && !mobile) || !role || !newPassword) {
       return res.status(400).json({

@@ -187,7 +187,6 @@ export const updateTournamentAfterStartService = async (tournamentId) => {
 };
 
 export const getTournamentsByOrganizerService = async (organizerId) => {
-  console.log("🚀 ~ getTournamentsByOrganizerService ~ organizerId:", organizerId)
   try {
     const tournaments = await Tournament.find({ organizer_id: organizerId }).sort({
       createdAt: -1,
