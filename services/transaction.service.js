@@ -2,10 +2,49 @@ import Transaction from "../models/transaction.modle.js";
 import User from "../models/user.modle.js";
 
 /**
+/**
  * Create a new transaction (deposit or withdrawal)
  */
-export const createTransaction = async ({ userId, type, amount, utrNumber, userMessage }) => {
-  // Step 1: Create the transaction
+export const createTransaction = async ({
+  userId,
+  type,
+  amount,
+  utrNumber,
+  userMessage,
+}) => {
+  // 🧩 Step 1: Validate required fields
+  if (!userId || !type || !amount) {
+    return {
+      success: false,
+      message: "Please provide all required fields: type, amount, and user ID.",
+    };
+  }
+
+  // 🧩 Step 2: Fetch user and current wallet balance
+  const user = await User.findById(userId);
+  if (!user) {
+    return { success: false, message: "User not found. Please log in again." };
+  }
+
+  const walletBalance = user.walletBalance || 0;
+
+  // 🧩 Step 3: Handle invalid transaction type
+  const validTypes = ["DEPOSIT", "WITHDRAWAL"];
+  if (!validTypes.includes(type)) {
+    return { success: false, message: "Invalid transaction type." };
+  }
+
+  // 🧩 Step 4: Balance check for withdrawals
+  if (type === "WITHDRAWAL" && amount > walletBalance) {
+    return {
+      success: false,
+      message: `Insufficient balance. You have ₹${walletBalance.toFixed(
+        2
+      )}, but attempted to withdraw ₹${amount}.`,
+    };
+  }
+
+  // 🧩 Step 5: Create the transaction
   const transaction = await Transaction.create({
     userId,
     type,
@@ -15,13 +54,27 @@ export const createTransaction = async ({ userId, type, amount, utrNumber, userM
     status: "PENDING",
   });
 
-  // Step 2: Populate user details inside transaction
-  const populatedTransaction = await Transaction.findById(transaction._id)
-    .populate("userId", "firstName lastName username email mobile role avatar isVerified");
+  // 🧩 Step 6: Populate the transaction with user info
+  const populatedTransaction = await Transaction.findById(transaction._id).populate(
+    "userId",
+    "firstName lastName username email mobile role avatar isVerified walletBalance"
+  );
 
-  // Step 3: Return the populated transaction
-  return populatedTransaction;
+  // 🧩 Step 7: Compose a clear, user-facing message
+  const successMessage =
+    type === "DEPOSIT"
+      ? `Your deposit request of ₹${amount} has been submitted successfully. Awaiting admin approval.`
+      : `Your withdrawal request of ₹${amount} has been submitted successfully. Awaiting admin approval.`;
+
+  // 🧩 Step 8: Return structured result
+  return {
+    success: true,
+    message: successMessage,
+    data: populatedTransaction,
+  };
 };
+
+
 /**
  * Approve a deposit or withdrawal by admin
  */

@@ -6,7 +6,8 @@ export const createTransaction = async (req, res) => {
     const { type, amount, utrNumber, userMessage } = req.body;
     const userId = req.user._id; // from auth middleware
 
-    const transaction = await transactionService.createTransaction({
+    // 🧩 Call the service
+    const result = await transactionService.createTransaction({
       userId,
       type,
       amount,
@@ -14,14 +15,30 @@ export const createTransaction = async (req, res) => {
       userMessage,
     });
 
+    // ⚠️ If the service signals a validation or balance issue
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.message || "Unable to create transaction.",
+      });
+    }
+
+    // ✅ Success
     res.status(201).json({
-      message: `${type} request submitted successfully`,
-      transaction,
+      success: true,
+      message: result.message,
+      transaction: result.data,
     });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("Transaction creation error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong while creating the transaction.",
+    });
   }
 };
+
+
 
 // ✅ Admin - Approve transaction
 export const approveTransaction = async (req, res) => {
