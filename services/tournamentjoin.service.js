@@ -8,12 +8,24 @@ export const createTournamentJoinService = async ({ tournamentId, playerId, paym
 
   const player = await User.findById(playerId);
   if (!player) throw new Error("Player not found");
+  const entryFee = tournament.entry_fee || 0;
 
+  // 💰 Step 3: Check wallet balance
+  if (player.walletBalance < entryFee) {
+    throw new Error(
+      `Insufficient wallet balance. You need ₹${entryFee}, but your balance is ₹${player.walletBalance}.`
+    );
+  }
+
+  // 💳 Step 4: Deduct entry fee from wallet
+  player.walletBalance -= entryFee;
+  await player.save();
   const join = await TournamentJoin.create({
     tournament: tournamentId,
     player: playerId,
     paymentProof: paymentProof || null,
-    status: "pending",
+    // status: "pending",
+    status: "confirmed"
   });
 
   tournament.preJoined += 1;
@@ -100,7 +112,6 @@ export const getTournamentJoinsService = async (tournamentId) => {
 
   return result[0];
 };
-
 export const cancelJoinService = async (joinId, requesterId, requesterRole) => {
   const join = await TournamentJoin.findById(joinId);
   if (!join) throw new Error("Join record not found");
@@ -109,16 +120,23 @@ export const cancelJoinService = async (joinId, requesterId, requesterRole) => {
   const tournament = await Tournament.findById(join.tournament);
   if (!tournament) throw new Error("Tournament not found");
 
+  // 👤 Fetch player for wallet update
+  const player = await User.findById(join.player);
+  if (!player) throw new Error("Player not found");
+
+  // 💰 Store entry fee for refund
+  const entryFee = tournament.entry_fee || 0;
+
   // 🧾 Store data before deletion
   const deletedJoinData = join.toObject();
 
-  // 🧍 For Player Requests
+  // 🧍 PLAYER Cancelling their own join
   if (requesterRole === "PLAYER") {
     if (join.player.toString() !== requesterId.toString()) {
       throw new Error("Unauthorized");
     }
 
-    // Player can cancel only if pending (not confirmed)
+    // ❌ Player can cancel only if not confirmed
     if (join.status !== "pending") {
       throw new Error("Cannot cancel after confirmation");
     }
@@ -128,37 +146,53 @@ export const cancelJoinService = async (joinId, requesterId, requesterRole) => {
       tournament.preJoined -= 1;
     }
 
+    // 💸 Refund entry fee back to wallet
+    if (entryFee > 0) {
+      player.walletBalance += entryFee;
+      await player.save();
+    }
+
+    // 🗑️ Delete join record
     await join.deleteOne();
     await tournament.save();
 
     return {
-      message: "Join cancelled successfully",
+      success: true,
+      message: `Join cancelled successfully. ₹${entryFee} refunded to your wallet.`,
       deletedJoin: deletedJoinData,
+      updatedBalance: player.walletBalance,
     };
   }
 
-  // 🧑‍💼 For Organizer Requests
+  // 🧑‍💼 ORGANIZER Cancelling player’s join
   if (requesterRole === "ORGANIZER") {
-    // 🟢 If the player was only pre-joined (pending approval)
     if (join.status === "pending" && tournament.preJoined > 0) {
       tournament.preJoined -= 1;
-    }
-    // 🟣 If the player was already confirmed
-    else if (join.status === "confirmed" && tournament.joinedPlayers > 0) {
+    } else if (join.status === "confirmed" && tournament.joinedPlayers > 0) {
       tournament.joinedPlayers -= 1;
     }
 
+    // 💸 Refund entry fee back to wallet
+    if (entryFee > 0) {
+      player.walletBalance += entryFee;
+      await player.save();
+    }
+
+    // 🗑️ Delete join record
     await join.deleteOne();
     await tournament.save();
 
     return {
-      message: `Join cancelled by organizer successfully (${join.status})`,
+      success: true,
+      message: `Join cancelled by organizer (${join.status}). ₹${entryFee} refunded to player’s wallet.`,
       deletedJoin: deletedJoinData,
+      updatedBalance: player.walletBalance,
     };
   }
 
   throw new Error("Unauthorized");
 };
+
 
 export const getAllTournamentJoinsService = async () => {
   const joins = await TournamentJoin.find()
