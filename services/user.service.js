@@ -37,3 +37,33 @@ export const resetPasswordService = async (userId, oldPassword, newPassword) => 
   const updatedUser = await user.save();
   return updatedUser;
 };
+
+/** 🧾 Get all unverified users */
+export const getAllUsersServices = async () => {
+  const users = await User.find()
+    .select("-password -otp -otpExpire -otpSentAt -otpResendAt")
+    .sort({ createdAt: -1 }); // newest first
+  return users;
+};
+
+/** ✅ Verify a user (admin only) */
+
+export const verifyUserServices = async (userId, isVerified) => {
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { isVerified },
+    { new: true, runValidators: true }
+  ).select("-password -otp -otpExpire -otpSentAt -otpResendAt");
+
+  return user;
+};
+
+
+export const deleteUserServices = async (userId) => {
+  
+  const user = await User.findByIdAndDelete(userId).select(
+    "-password -otp -otpExpire -otpSentAt -otpResendAt"
+  );
+  return user;
+};
+

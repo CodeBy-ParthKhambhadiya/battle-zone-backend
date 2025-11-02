@@ -49,7 +49,7 @@ export const registerUserService = async (userData) => {
 
   // ⚙️ Skipping OTP generation
   // const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const isVerified = role === "ORGANIZER" ? false : true;
+  const isVerified = role === "ORGANIZER" ? false : false;
 
   const newUser = await User.create({
     email,
