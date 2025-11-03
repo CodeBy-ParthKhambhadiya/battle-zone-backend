@@ -67,3 +67,13 @@ export const deleteUserServices = async (userId) => {
   return user;
 };
 
+export const getAdminDetails = async () => {
+  try {
+    const admin = await User.findOne({ role: "ADMIN" })
+      .select("-password -email -mobile"); // exclude sensitive fields
+
+    return admin;
+  } catch (error) {
+    throw new Error("Failed to fetch admin details");
+  }
+};

@@ -1,4 +1,4 @@
-import { deleteUserServices, getAllUsersServices, getUserByIdService, resetPasswordService, updateUserService, verifyUserServices } from "../services/user.service.js";
+import { deleteUserServices, getAdminDetails, getAllUsersServices, getUserByIdService, resetPasswordService, updateUserService, verifyUserServices } from "../services/user.service.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
 
 export const getUserByIdController = async (req, res) => {
@@ -136,5 +136,26 @@ export const deleteUserController = async (req, res) => {
   } catch (error) {
     console.error("❌ Delete user error:", error);
     return res.status(500).json({ message: error.message });
+  }
+};
+
+export const fetchAdminDetails = async (req, res) => {
+  try {
+    const admin = await getAdminDetails();
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Admin details fetched successfully",
+      data: admin,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Server error",
+    });
   }
 };
