@@ -24,8 +24,11 @@ const server = http.createServer(app);
 // ✅ Initialize Socket.IO
 export const io = new Server(server, {
   cors: {
-    origin: "*", // change to your frontend URL in production
-    methods: ["GET", "POST", "PATCH", "DELETE"],
+ origin: [
+      "http://localhost:3000", // your frontend dev URL
+      "https://battle-zone-frontend.vercel.app", // your production frontend URL (example)
+    ],
+        methods: ["GET", "POST", "PATCH", "DELETE"],
   },
 });
 
