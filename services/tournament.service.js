@@ -3,8 +3,10 @@ import TournamentChat from "../models/tournamentchat.modle.js";
 import TournamentJoin from "../models/tournamentjoin.modle.js";
 import User from "../models/user.modle.js";
 import { sendTournamentCreatedEmail } from "../utils/emailService.js";
+import { manageUserNotification } from "../utils/notificationManager.js";
 
 const calculateEntryFee = (prizePool, maxPlayers) => (maxPlayers > 0 ? prizePool / maxPlayers : 0);
+
 
 export const createTournamentService = async (data, user) => {
   // 1️⃣ Ensure only organizers can create tournaments
@@ -28,8 +30,6 @@ export const createTournamentService = async (data, user) => {
     status: data.status ?? "UPCOMING",
     prize_pool: prizePool,
     rules: data.rules ?? [],
-
-    // 🆕 Added fields
     roomID: data.roomID ?? null,
     password: data.password ?? null,
   };
@@ -37,7 +37,7 @@ export const createTournamentService = async (data, user) => {
   // 3️⃣ Create tournament record
   const tournament = await Tournament.create(tournamentData);
 
-  // 4️⃣ Auto-create a tournament chat
+  // 4️⃣ Auto-create tournament chat
   const chat = await TournamentChat.create({
     tournament: tournament._id,
     organizer: user._id,
@@ -49,17 +49,34 @@ export const createTournamentService = async (data, user) => {
     ],
   });
 
-  // 5️⃣ Send email to all registered players
+  // 5️⃣ Send notifications to all players
   try {
-    const players = await User.find({ role: "PLAYER" }).select("email firstName");
-    // await Promise.all(
-    //   players.map((player) =>
-    //     sendTournamentCreatedEmail(player.email, tournament, user.firstName)
-    //   )
-    // );
-    console.log(`✅ Emails sent to ${players.length} players`);
+    const players = await User.find({ role: "PLAYER" }).select("_id firstName email");
+
+    if (players.length > 0) {
+      // Use Promise.all for concurrent execution
+      await Promise.all(
+        players.map((player) =>
+          manageUserNotification(player._id, {
+            category: "TOURNAMENT",
+            title: "🎮 New Tournament Created!",
+            message: `${user.firstName} just created a new tournament: ${tournament.name}`,
+            type: "INFO",
+            data: {
+              tournamentId: tournament._id,
+              tournamentName: tournament.name,
+              organizer: user.firstName,
+            },
+          })
+        )
+      );
+
+      console.log(`✅ Sent notifications to ${players.length} players`);
+    } else {
+      console.log("⚠️ No players found to notify");
+    }
   } catch (err) {
-    console.error("❌ Failed to send tournament creation emails:", err.message);
+    console.error("❌ Failed to send tournament notifications:", err.message);
   }
 
   // 6️⃣ Return combined data
@@ -70,8 +87,6 @@ export const createTournamentService = async (data, user) => {
     chat,
   };
 };
-
-
 
 export const getAllTournamentsService = async () => {
     return await Tournament.find().populate("organizer_id");
@@ -141,7 +156,6 @@ export const deleteTournamentService = async (_id, organizerId) => {
     const deletedTournament = await Tournament.findOneAndDelete({ _id });
     return deletedTournament;
 };
-
 
 export const updateTournamentAfterStartService = async (tournamentId) => {
   const tournament = await Tournament.findById(tournamentId);
