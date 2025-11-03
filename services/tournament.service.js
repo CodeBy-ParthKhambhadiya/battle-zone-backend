@@ -49,7 +49,6 @@ export const createTournamentService = async (data, user) => {
     ],
   });
 
-  // 5️⃣ Send notifications to all players
   try {
     const players = await User.find({ role: "PLAYER" }).select("_id firstName email");
 
@@ -59,9 +58,12 @@ export const createTournamentService = async (data, user) => {
         players.map((player) =>
           manageUserNotification(player._id, {
             category: "TOURNAMENT",
-            title: "🎮 New Tournament Created!",
-            message: `${user.firstName} just created a new tournament: ${tournament.name}`,
-            type: "INFO",
+            title: " New Tournament Created!",
+            message: `
+ A brand new tournament, ${tournament.name}, has just been announced! With a total prize pool of ₹${tournament.prize_pool} and an entry fee of ₹${tournament.entry_fee}, this event promises intense competition and exciting rewards. The tournament kicks off on ${new Date(tournament.start_datetime).toLocaleString()}, so make sure you register early and secure your spot!
+
+Get ready to showcase your skills and compete for glory! 
+  `,
             data: {
               tournamentId: tournament._id,
               tournamentName: tournament.name,
@@ -89,13 +91,13 @@ export const createTournamentService = async (data, user) => {
 };
 
 export const getAllTournamentsService = async () => {
-    return await Tournament.find().populate("organizer_id");
+  return await Tournament.find().populate("organizer_id");
 };
 
 export const getTournamentByIdService = async (_id) => {
-    const tournament = await Tournament.findOne({ _id }).populate("organizer_id");
-    if (!tournament) throw new Error("Tournament not found");
-    return tournament;
+  const tournament = await Tournament.findOne({ _id }).populate("organizer_id");
+  if (!tournament) throw new Error("Tournament not found");
+  return tournament;
 };
 
 export const updateTournamentService = async (_id, data, organizerId) => {
@@ -147,14 +149,14 @@ export const updateTournamentService = async (_id, data, organizerId) => {
 
 export const deleteTournamentService = async (_id, organizerId) => {
 
-    const existingTournament = await Tournament.findOne({ _id });
-    if (!existingTournament) throw new Error("Tournament not found");
-    if (existingTournament.organizer_id.toString() !== organizerId.toString()) {
-        throw new Error("Unauthorized to delete this tournament");
-    }
+  const existingTournament = await Tournament.findOne({ _id });
+  if (!existingTournament) throw new Error("Tournament not found");
+  if (existingTournament.organizer_id.toString() !== organizerId.toString()) {
+    throw new Error("Unauthorized to delete this tournament");
+  }
 
-    const deletedTournament = await Tournament.findOneAndDelete({ _id });
-    return deletedTournament;
+  const deletedTournament = await Tournament.findOneAndDelete({ _id });
+  return deletedTournament;
 };
 
 export const updateTournamentAfterStartService = async (tournamentId) => {

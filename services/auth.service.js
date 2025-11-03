@@ -3,6 +3,7 @@ import User from "../models/user.modle.js";
 import { generateStrongPassword } from "../utils/passwordGenerator.js";
 import { sendForgotPasswordEmail, sendOTPEmail } from "../utils/emailService.js";
 import { uploadToCloudinary } from "../utils/cloudinaryUpload.js";
+import { manageUserNotification } from "../utils/notificationManager.js";
 
 const OTP_RESEND_INTERVAL = 2 * 60 * 1000;
 const OTP_EXPIRE_DURATION = 2 * 60 * 1000;
@@ -62,7 +63,13 @@ export const registerUserService = async (userData) => {
     isVerified, // ✅ Directly mark as verified since OTP is skipped
     ...rest,
   });
-
+  await manageUserNotification(newUser._id.toString(), {
+    category: "SYSTEM",
+    title: "🔥 Welcome to BattleZone!",
+    message: "Your journey starts here! Set up your profile to unlock full access to tournaments, rewards, and more. Let’s gear up for victory!",
+    type: "INFO",
+    data: { action: "complete_profile" },
+  });
   // 📨 Skipped sending OTP
   // await sendOTPEmail(email, otp);
 

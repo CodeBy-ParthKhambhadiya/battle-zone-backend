@@ -1,10 +1,8 @@
 import Transaction from "../models/transaction.modle.js";
 import User from "../models/user.modle.js";
+import { manageUserNotification } from "../utils/notificationManager.js";
 
-/**
-/**
- * Create a new transaction (deposit or withdrawal)
- */
+
 export const createTransaction = async ({
   userId,
   type,
@@ -66,6 +64,16 @@ export const createTransaction = async ({
       ? `Your deposit request of ₹${amount} has been submitted successfully. Awaiting admin approval.`
       : `Your withdrawal request of ₹${amount} has been submitted successfully. Awaiting admin approval.`;
 
+  await manageUserNotification(user._id.toString(), {
+    category: "SYSTEM",
+    title:
+      type === "DEPOSIT"
+        ? " Deposit Request Submitted"
+        : " Withdrawal Request Submitted",
+    message: successMessage,
+    type: "INFO",
+    data: { transactionId: transaction._id, amount, status: "PENDING" },
+  });
   // 🧩 Step 8: Return structured result
   return {
     success: true,
@@ -74,14 +82,11 @@ export const createTransaction = async ({
   };
 };
 
-
-/**
- * Approve a deposit or withdrawal by admin
- */
 export const approveTransaction = async ({ transactionId, adminId, remark }) => {
   const transaction = await Transaction.findById(transactionId);
   if (!transaction) throw new Error("Transaction not found");
 
+  console.log("🚀 ~ approveTransaction ~ transaction:", transaction)
   if (transaction.status !== "PENDING") throw new Error("Transaction already processed");
 
   const user = await User.findById(transaction.userId);
@@ -102,13 +107,29 @@ export const approveTransaction = async ({ transactionId, adminId, remark }) => 
   transaction.remark = remark;
   transaction.approvedBy = adminId;
   await transaction.save();
+  const formattedAmount = `₹${transaction.amount.toLocaleString("en-IN")}`;
+
+  await manageUserNotification(user._id.toString(), {
+    category: "SYSTEM",
+    title:
+      transaction.type === "DEPOSIT"
+        ? " Deposit Approved"
+        : " Withdrawal Approved",
+    message:
+      transaction.type === "DEPOSIT"
+        ? `Your deposit of ${formattedAmount} has been approved and added to your wallet successfully. Please check your account to view the updated balance.`
+        : `Your withdrawal of ${formattedAmount} has been approved. The funds will be transferred to your account shortly — please check your account for updates.`,
+    type: "SUCCESS",
+    data: {
+      transactionId,
+      amount: transaction.amount,
+      status: "SUCCESS",
+    },
+  });
 
   return { transaction, walletBalance: user.walletBalance };
 };
 
-/**
- * Reject a pending transaction
- */
 export const rejectTransaction = async ({ transactionId, adminId, remark }) => {
   const transaction = await Transaction.findById(transactionId);
   if (!transaction) throw new Error("Transaction not found");
@@ -116,23 +137,40 @@ export const rejectTransaction = async ({ transactionId, adminId, remark }) => {
   if (transaction.status !== "PENDING") throw new Error("Transaction already processed");
 
   transaction.status = "REJECTED";
+  console.log("🚀 ~ rejectTransaction ~ transaction:", transaction)
   transaction.remark = remark;
   transaction.approvedBy = adminId;
+  console.log("🚀 ~ rejectTransaction ~ transaction:", transaction)
+  const userId = transaction.userId;
   await transaction.save();
+  const formattedAmount = `₹${transaction.amount.toLocaleString("en-IN")}`;
+
+  await manageUserNotification(userId.toString(), {
+    category: "SYSTEM",
+    title:
+      transaction.type === "DEPOSIT"
+        ? " Deposit Rejected"
+        : " Withdrawal Rejected",
+    message:
+      transaction.type === "DEPOSIT"
+        ? `Unfortunately, your deposit request of ${formattedAmount} has been rejected. Please check your account or contact our support team at battlezoneofficial.com for more details.`
+        : `Unfortunately, your withdrawal request of ${formattedAmount} has been rejected. Please check your account or reach out to our support team at battlezoneofficial.com if you have any questions.`,
+    type: "ERROR",
+    data: {
+      transactionId,
+      amount: transaction.amount,
+      status: "REJECTED",
+    },
+  });
+
 
   return transaction;
 };
 
-/**
- * Get all transactions for a user (history)
- */
 export const getUserTransactions = async (userId) => {
   return await Transaction.find({ userId }).sort({ createdAt: -1 });
 };
 
-/**
- * Get all pending transactions (for admin dashboard)
- */
 export const getPendingTransactions = async () => {
   return await Transaction.find({ status: "PENDING" }).populate("userId", "firstName lastName email");
 };
