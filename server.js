@@ -30,24 +30,26 @@ export const io = new Server(server, {
   },
 });
 
-// ✅ Handle Socket.IO connections
 io.on("connection", (socket) => {
+  console.log("🟢 New socket connected:", socket.id);
 
-  // When a user joins their personal room
   socket.on("joinRoom", (userId) => {
     if (userId) {
       socket.join(userId);
+      console.log(`👤 User ${userId} joined their room`);
     }
   });
 
-  // Optional: leave room manually
   socket.on("leaveRoom", (userId) => {
     socket.leave(userId);
+    console.log(`🚪 User ${userId} left the room`);
   });
 
   socket.on("disconnect", () => {
+    console.log("🔴 Socket disconnected:", socket.id);
   });
 });
+
 
 // Start server
 const PORT = process.env.PORT || 5000;
