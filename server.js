@@ -20,16 +20,16 @@ app.use("/api", apiRoutes);
 
 // Create HTTP server (important for Socket.IO)
 const server = http.createServer(app);
-const allowedOrigin = process.env.CLIENT_URL;
 
 // ✅ Initialize Socket.IO
 export const io = new Server(server, {
   cors: {
-    origin: allowedOrigin,
+    origin:"https://battle-zone-frontend.vercel.app", // change to your frontend URL in production
+    // origin: "*", // change to your frontend URL in production
     methods: ["GET", "POST", "PATCH", "DELETE"],
-    credentials: true,
   },
 });
+
 // ✅ Handle Socket.IO connections
 io.on("connection", (socket) => {
 
