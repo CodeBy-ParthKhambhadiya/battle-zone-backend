@@ -9,10 +9,10 @@ import {
 import { protect } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
-router.post("/:userId", protect, createNotification);
+router.post("/notifi", protect, createNotification);
 router.get("/:userId", protect, getUserNotifications);
 router.post("/me/read-all", protect, markAllNotificationsAsRead);
-router.delete("/:userId/:notificationId", protect, deleteNotification);
-router.delete("/:userId", protect, clearAllNotifications);
+router.delete("/:notificationId", protect, deleteNotification);
+router.delete("/", protect, clearAllNotifications);
 
 export default router;
