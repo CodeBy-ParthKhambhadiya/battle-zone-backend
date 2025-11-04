@@ -50,7 +50,7 @@ export const registerUserService = async (userData) => {
 
   // ⚙️ Skipping OTP generation
   // const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const isVerified = role === "ORGANIZER" ? false : false;
+  const isVerified = role === "ORGANIZER" ? false : true;
 
   const newUser = await User.create({
     email,
@@ -76,6 +76,84 @@ export const registerUserService = async (userData) => {
   return newUser;
 };
 
+// export const registerUserService = async (userData) => {
+//   const { email, password, role = "PLAYER", avatarFile, ...rest } = userData;
+
+//   const now = new Date();
+//   const existingUser = await User.findOne({ email, role });
+
+//   // ✅ If user exists but not verified, just regenerate OTP
+//   if (existingUser) {
+//     if (existingUser.isVerified) {
+//       throw new Error(`A ${role} with this email already exists.`);
+//     }
+
+//     // ⏱️ Prevent spamming OTP within cooldown
+//     if (
+//       existingUser.otpSentAt &&
+//       now - existingUser.otpSentAt < OTP_RESEND_INTERVAL
+//     ) {
+//       const remaining = Math.ceil(
+//         (OTP_RESEND_INTERVAL - (now - existingUser.otpSentAt)) / 1000
+//       );
+//       throw new Error(
+//         `OTP already sent. Please wait ${remaining} seconds before requesting again.`
+//       );
+//     }
+
+//     // 🔢 Generate new OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+//     existingUser.otp = otp;
+//     existingUser.otpExpire = new Date(now.getTime() + OTP_EXPIRE_DURATION);
+//     existingUser.otpSentAt = now;
+//     await existingUser.save();
+
+//     // 📧 Send OTP via SendGrid
+//     await sendOTPEmail(email, otp);
+
+//     return existingUser;
+//   }
+
+//   // 🔐 Hash password
+//   const hashedPassword = await bcrypt.hash(password, 10);
+
+//   // 🖼️ Upload avatar if provided
+//   let avatarUrl;
+//   if (avatarFile) {
+//     avatarUrl = await uploadToCloudinary(avatarFile.path, "users");
+//   }
+
+//   // 🔢 Generate OTP for new user
+//   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+//   const newUser = await User.create({
+//     email,
+//     password: hashedPassword,
+//     role,
+//     avatar: avatarUrl,
+//     otp,
+//     otpExpire: new Date(now.getTime() + OTP_EXPIRE_DURATION),
+//     otpSentAt: now,
+//     isVerified: false, // require email verification
+//     ...rest,
+//   });
+
+//   // 📬 Send OTP Email
+//   await sendOTPEmail(email, otp);
+
+//   // 📨 Optional welcome notification
+//   await manageUserNotification(newUser._id.toString(), {
+//     category: "SYSTEM",
+//     title: "🔥 Welcome to BattleZone!",
+//     message:
+//       "Your journey starts here! Set up your profile to unlock full access to tournaments, rewards, and more. Let’s gear up for victory!",
+//     type: "INFO",
+//     data: { action: "complete_profile" },
+//   });
+
+//   return newUser;
+// };
 
 export const verifyOTPService = async (email, otp, role = "PLAYER") => {
   // 1️⃣ Find user by email and role

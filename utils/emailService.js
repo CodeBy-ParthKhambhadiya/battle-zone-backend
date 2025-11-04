@@ -55,45 +55,46 @@ export const sendForgotPasswordEmail = async (to, newPassword, role = "USER") =>
 // ----------------------------
 // 2️⃣ OTP Email
 // ----------------------------
-export const sendOTPEmail = async (to, otp) => {
-  try {
-    const mailOptions = {
-      from: `"BattleZone Support" <${process.env.EMAIL_FROM}>`,
-      to,
-      subject: "🔐 BattleZone OTP Verification",
-      html: `
-        <div style="font-family: 'Segoe UI', sans-serif; padding: 30px;">
-          <div style="max-width:600px; margin:auto; border-radius:12px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
-            <div style="background-color:#1e293b; color:#ffffff; padding:25px; text-align:center;">
-              <h1 style="margin:0; font-size:26px;">⚔️ BattleZone</h1>
-            </div>
-            <div style="padding:35px; text-align:center;">
-              <h2 style="color:#1e293b; font-size:22px;">OTP Verification</h2>
-              <p style="color:#475569; font-size:16px;">Your OTP for BattleZone registration is:</p>
-              <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin:20px auto; display:inline-block;">
-                <p style="font-size:22px; font-weight:bold; color:#0f172a; margin:0;">${otp}</p>
-              </div>
-              <p style="color:#475569; font-size:15px; margin-top:25px;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
-            </div>
-            <div style="background-color:#f1f5f9; color:#94a3b8; font-size:12px; text-align:center; padding:15px;">
-              <p>© ${new Date().getFullYear()} <strong>BattleZone</strong>. All rights reserved.</p>
-            </div>
-          </div>
-        </div>
-      `,
-    };
+// export const sendOTPEmail = async (to, otp) => {
+//   try {
+//     const mailOptions = {
+//       from: `"BattleZone Support" <${process.env.EMAIL_FROM}>`,
+//       to,
+//       subject: "🔐 BattleZone OTP Verification",
+//       html: `
+//         <div style="font-family: 'Segoe UI', sans-serif; padding: 30px;">
+//           <div style="max-width:600px; margin:auto; border-radius:12px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.08);">
+//             <div style="background-color:#1e293b; color:#ffffff; padding:25px; text-align:center;">
+//               <h1 style="margin:0; font-size:26px;">⚔️ BattleZone</h1>
+//             </div>
+//             <div style="padding:35px; text-align:center;">
+//               <h2 style="color:#1e293b; font-size:22px;">OTP Verification</h2>
+//               <p style="color:#475569; font-size:16px;">Your OTP for BattleZone registration is:</p>
+//               <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:20px; margin:20px auto; display:inline-block;">
+//                 <p style="font-size:22px; font-weight:bold; color:#0f172a; margin:0;">${otp}</p>
+//               </div>
+//               <p style="color:#475569; font-size:15px; margin-top:25px;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+//             </div>
+//             <div style="background-color:#f1f5f9; color:#94a3b8; font-size:12px; text-align:center; padding:15px;">
+//               <p>© ${new Date().getFullYear()} <strong>BattleZone</strong>. All rights reserved.</p>
+//             </div>
+//           </div>
+//         </div>
+//       `,
+//     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ OTP email sent to ${to}`);
-  } catch (err) {
-    console.error("❌ Error sending OTP email:", err.message);
-    throw new Error("Failed to send OTP email.");
-  }
-};
+//     await transporter.sendMail(mailOptions);
+//     console.log(`✅ OTP email sent to ${to}`);
+//   } catch (err) {
+//     console.error("❌ Error sending OTP email:", err.message);
+//     throw new Error("Failed to send OTP email.");
+//   }
+// };
 
 // ----------------------------
 // 3️⃣ Tournament Created Email
 // ----------------------------
+
 export const sendTournamentCreatedEmail = async (to, tournament, organizerName) => {
   try {
     const mailOptions = {
@@ -152,3 +153,38 @@ export const sendTournamentCreatedEmail = async (to, tournament, organizerName) 
     throw new Error("Failed to send tournament email");
   }
 };
+
+
+import sgMail from "@sendgrid/mail";
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+export const sendOTPEmail = async (email, otp) => {
+  const msg = {
+    to: email,
+    from: process.env.EMAIL_FROM,
+    subject: "Your OTP Code - Battle Zone",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2>🔐 Verify Your Email</h2>
+        <p>Your OTP is:</p>
+        <h1 style="color:#007BFF;">${otp}</h1>
+        <p>Expires in 2 minutes.</p>
+      </div>
+    `,
+  };
+
+  try {
+    await sgMail.send(msg);
+    console.log(`✅ OTP email sent to ${email}`);
+  } catch (error) {
+    console.error("❌ SendGrid Error:", error.message);
+
+    if (error.response) {
+      console.error("SendGrid Response:", error.response.body);
+    }
+
+    throw new Error("Failed to send OTP email");
+  }
+};
+
