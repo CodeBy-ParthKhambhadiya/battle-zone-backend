@@ -70,7 +70,7 @@ export const addMessageController = async (req, res) => {
 
         res.status(201).json({
             status: "success",
-            message: "Message sent successfully",
+            // message: "Message sent successfully",
             data: newMessage
         });
     } catch (error) {
