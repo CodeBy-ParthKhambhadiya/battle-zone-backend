@@ -1,46 +1,34 @@
 import Notification from "../models/notification.model.js";
-import { io } from "../server.js"; // make sure server exports io
 import { v4 as uuidv4 } from "uuid";
+import { getIo } from "../config/socket.js";
 
-/**
- * Manages notifications for a user and emits through Socket.IO.
- *
- * @param {String} userId - Target user's ID
- * @param {Object} notificationData - Notification details
- * @returns {Object} The newly created notification
- */
-export const manageUserNotification = async (userId, notificationData) => {
+export const manageUserNotification = async (userId, data) => {
   try {
+    const io = getIo(); // ✅ safe access
     const newNotification = {
       _id: uuidv4(),
-      category: notificationData.category || "GENERAL",
-      title: notificationData.title || "Notification",
-      message: notificationData.message || "",
-      type: notificationData.type || "INFO",
-      data: notificationData.data || {},
+      category: data.category || "GENERAL",
+      title: data.title || "Notification",
+      message: data.message || "",
+      type: data.type || "INFO",
+      data: data.data || {},
       isRead: false,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
     };
 
-    // Find or create user's notification record
     let userNotif = await Notification.findOne({ userId });
-
     if (!userNotif) {
-      userNotif = await Notification.create({
-        userId,
-        notifications: [newNotification],
-      });
+      userNotif = await Notification.create({ userId, notifications: [newNotification] });
     } else {
       userNotif.notifications.unshift(newNotification);
       await userNotif.save();
     }
 
-    // Emit in real-time via Socket.IO
     io.to(userId).emit("notification", newNotification);
+    console.log(`🔔 Notification sent to ${userId}`);
 
     return newNotification;
-  } catch (error) {
-    console.error("❌ Error managing user notification:", error);
-    throw error;
+  } catch (err) {
+    console.error("❌ manageUserNotification error:", err);
   }
 };
