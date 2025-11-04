@@ -25,7 +25,7 @@ const server = http.createServer(app);
 export const io = new Server(server, {
   cors: {
     origin:"https://battle-zone-frontend.vercel.app", // change to your frontend URL in production
-    // origin: "*", // change to your frontend URL in production
+    // origin: "http://localhost:3000", // change to your frontend URL in production
     methods: ["GET", "POST", "PATCH", "DELETE"],
   },
 });

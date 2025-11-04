@@ -7,6 +7,7 @@ import {
     deleteMessageService,
     getAllUsersService,
 } from "../services/privatechat.service.js";
+import { emitMessage } from "../utils/socket.utils.js";
 
 export const createChatController = async (req, res) => {
     try {
@@ -58,12 +59,15 @@ export const addMessageController = async (req, res) => {
 
         const senderId = req.user.id;
         const { chatId, message } = req.body;
-       
+
         if (!chatId || !message) {
             return res.status(400).json({ message: "chatId and message are required" });
         }
 
         const newMessage = await addMessageService(chatId, senderId, message);
+        
+        await emitMessage(chatId, senderId, newMessage);
+
         res.status(201).json({
             status: "success",
             message: "Message sent successfully",
@@ -124,13 +128,13 @@ export const editMessageController = async (req, res) => {
 };
 
 export const getAllUsersController = async (req, res) => {
-  try {
-    const currentUserId = req.user.id; // assuming you have auth middleware
-    const users = await getAllUsersService(currentUserId);
+    try {
+        const currentUserId = req.user.id; // assuming you have auth middleware
+        const users = await getAllUsersService(currentUserId);
 
-    res.status(200).json(users);
-  } catch (error) {
-    console.error("Error fetching all users:", error);
-    res.status(500).json({ message: error.message });
-  }
+        res.status(200).json(users);
+    } catch (error) {
+        console.error("Error fetching all users:", error);
+        res.status(500).json({ message: error.message });
+    }
 };
