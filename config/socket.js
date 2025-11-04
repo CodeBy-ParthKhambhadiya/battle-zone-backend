@@ -6,7 +6,6 @@ export const initSocket = (server) => {
  io = new Server(server, {
   cors: {
     origin:"https://battle-zone-frontend.vercel.app", // change to your frontend URL in production
-    // origin: "http://localhost:3000", // change to your frontend URL in production
     methods: ["GET", "POST", "PATCH", "DELETE"],
   },
 });
