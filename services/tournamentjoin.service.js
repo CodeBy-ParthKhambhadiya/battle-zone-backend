@@ -3,36 +3,61 @@ import Tournament from "../models/tournament.modle.js";
 import User from "../models/user.modle.js";
 
 export const createTournamentJoinService = async ({ tournamentId, playerId, paymentProof }) => {
+  // 🔍 Step 1: Validate tournament and player
   const tournament = await Tournament.findById(tournamentId);
   if (!tournament) throw new Error("Tournament not found");
 
   const player = await User.findById(playerId);
   if (!player) throw new Error("Player not found");
+
   const entryFee = tournament.entry_fee || 0;
 
-  // 💰 Step 3: Check wallet balance
+  // 💰 Step 2: Check wallet balance
   if (player.walletBalance < entryFee) {
     throw new Error(
       `Insufficient wallet balance. You need ₹${entryFee}, but your balance is ₹${player.walletBalance}.`
     );
   }
 
-  // 💳 Step 4: Deduct entry fee from wallet
+  // 💳 Step 3: Deduct entry fee from wallet
   player.walletBalance -= entryFee;
   await player.save();
+
+  // 🧾 Step 4: Create join record
   const join = await TournamentJoin.create({
     tournament: tournamentId,
     player: playerId,
     paymentProof: paymentProof || null,
-    // status: "pending",
-    status: "confirmed"
+    paymentReceived: true,
+    status: "confirmed",
   });
 
-  tournament.preJoined += 1;
+  // 🧩 Step 5: Update tournament stats
+  tournament.joinedPlayers = (tournament.joinedPlayers || 0) + 1;
+  tournament.preJoined = Math.max(0, (tournament.preJoined || 0) - 1);
+
+  // Add player to joined list if not already there
+  if (!tournament.joinedPlayersList) tournament.joinedPlayersList = [];
+  if (!tournament.joinedPlayersList.includes(playerId)) {
+    tournament.joinedPlayersList.push(playerId);
+  }
+
   await tournament.save();
 
-  return join;
+  // 🧠 Step 6: Attach current tournament to player (optional but handy)
+  player.currentTournament = tournament._id;
+  await player.save();
+
+  // 🏆 Step 7: Return full tournament details (populated)
+  const fullTournament = await Tournament.findById(tournamentId)
+  
+  return {
+    message: "Joined successfully!",
+    join,
+    tournament: fullTournament,
+  };
 };
+
 
 
 export const confirmPaymentService = async (joinId) => {
