@@ -51,6 +51,16 @@ export const createTransaction = async ({
     userMessage,
     status: "PENDING",
   });
+  if (type === "WITHDRAWAL") {
+    // Move the withdrawn amount into pendingPayments directly
+    const currentPending = Number(user.pendingPayments) || 0;
+    const currentWalletBalance = Number(user.walletBalance) || 0;
+    const withdrawAmount = Number(amount);
+    user.walletBalance = currentWalletBalance - withdrawAmount;
+
+    user.pendingPayments = currentPending + withdrawAmount;
+    await user.save();
+  }
 
   // 🧩 Step 6: Populate the transaction with user info
   const populatedTransaction = await Transaction.findById(transaction._id).populate(
@@ -96,8 +106,8 @@ export const approveTransaction = async ({ transactionId, adminId, remark }) => 
   if (transaction.type === "DEPOSIT") {
     user.walletBalance += transaction.amount;
   } else if (transaction.type === "WITHDRAWAL") {
-    if (user.walletBalance < transaction.amount) throw new Error("Insufficient wallet balance");
-    user.walletBalance -= transaction.amount;
+    if (user.pendingPayments < transaction.amount) throw new Error("Insufficient wallet balance");
+    user.pendingPayments -= transaction.amount;
   }
 
   await user.save();
@@ -132,7 +142,9 @@ export const approveTransaction = async ({ transactionId, adminId, remark }) => 
 
 export const rejectTransaction = async ({ transactionId, adminId, remark }) => {
   const transaction = await Transaction.findById(transactionId);
+  console.log("🚀 ~ rejectTransaction ~ transaction:", transaction)
   if (!transaction) throw new Error("Transaction not found");
+  const user = await User.findById(transaction.userId);
 
   if (transaction.status !== "PENDING") throw new Error("Transaction already processed");
 
@@ -145,6 +157,20 @@ export const rejectTransaction = async ({ transactionId, adminId, remark }) => {
   await transaction.save();
   const formattedAmount = `₹${transaction.amount.toLocaleString("en-IN")}`;
 
+  if (transaction.type === "DEPOSIT") {
+    // No wallet update for deposit rejection (it was never added)
+  } else if (transaction.type === "WITHDRAWAL") {
+    const currentPending = Number(user.pendingPayments) || 0;
+    const withdrawAmount = Number(transaction.amount);
+
+    // 🪙 Add back to wallet
+    user.walletBalance += withdrawAmount;
+
+    // 🔽 Remove from pending payments (ensure not negative)
+    user.pendingPayments = Math.max(currentPending - withdrawAmount, 0);
+
+    await user.save();
+  }
   await manageUserNotification(userId.toString(), {
     category: "SYSTEM",
     title:

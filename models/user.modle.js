@@ -79,6 +79,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0, // current wallet balance
     },
+    pendingPayments: {
+      type: Number,
+      default: 0, // pending payments amount
+    },
   },
   {
     timestamps: true,
