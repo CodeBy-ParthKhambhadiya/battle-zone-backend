@@ -10,6 +10,12 @@ export const createTournamentJoinService = async ({ tournamentId, playerId, paym
   const player = await User.findById(playerId);
   if (!player) throw new Error("Player not found");
 
+  const maxPlayers = tournament.max_players; // set default max players if not set
+  const joinedPlayersCount = tournament.joinedPlayers;
+
+  if (joinedPlayersCount >= maxPlayers) {
+    throw new Error("Tournament full, please join the next tournament.");
+  }
   const entryFee = tournament.entry_fee || 0;
 
   // 💰 Step 2: Check wallet balance
@@ -50,7 +56,7 @@ export const createTournamentJoinService = async ({ tournamentId, playerId, paym
 
   // 🏆 Step 7: Return full tournament details (populated)
   const fullTournament = await Tournament.findById(tournamentId)
-  
+
   return {
     message: "Joined successfully!",
     join,
