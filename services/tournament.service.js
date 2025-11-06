@@ -91,8 +91,17 @@ Get ready to showcase your skills and compete for glory!
 };
 
 export const getAllTournamentsService = async () => {
-  return await Tournament.find().populate("organizer_id");
+  const tournaments = await Tournament.find().populate("organizer_id");
+
+  // remove password and roomID from each tournament
+  const filteredTournaments = tournaments.map(t => {
+    const { password, roomID, ...rest } = t.toObject();
+    return rest;
+  });
+
+  return filteredTournaments;
 };
+
 
 export const getTournamentByIdService = async (_id) => {
   const tournament = await Tournament.findOne({ _id }).populate("organizer_id");
