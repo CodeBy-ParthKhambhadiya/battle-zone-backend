@@ -96,7 +96,6 @@ export const approveTransaction = async ({ transactionId, adminId, remark }) => 
   const transaction = await Transaction.findById(transactionId);
   if (!transaction) throw new Error("Transaction not found");
 
-  console.log("🚀 ~ approveTransaction ~ transaction:", transaction)
   if (transaction.status !== "PENDING") throw new Error("Transaction already processed");
 
   const user = await User.findById(transaction.userId);
@@ -142,17 +141,14 @@ export const approveTransaction = async ({ transactionId, adminId, remark }) => 
 
 export const rejectTransaction = async ({ transactionId, adminId, remark }) => {
   const transaction = await Transaction.findById(transactionId);
-  console.log("🚀 ~ rejectTransaction ~ transaction:", transaction)
   if (!transaction) throw new Error("Transaction not found");
   const user = await User.findById(transaction.userId);
 
   if (transaction.status !== "PENDING") throw new Error("Transaction already processed");
 
   transaction.status = "REJECTED";
-  console.log("🚀 ~ rejectTransaction ~ transaction:", transaction)
   transaction.remark = remark;
   transaction.approvedBy = adminId;
-  console.log("🚀 ~ rejectTransaction ~ transaction:", transaction)
   const userId = transaction.userId;
   await transaction.save();
   const formattedAmount = `₹${transaction.amount.toLocaleString("en-IN")}`;
