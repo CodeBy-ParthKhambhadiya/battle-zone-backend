@@ -94,12 +94,12 @@ export const getAllTournamentsService = async () => {
   const tournaments = await Tournament.find().populate("organizer_id");
 
   // remove password and roomID from each tournament
-  const filteredTournaments = tournaments.map(t => {
-    const { password, roomID, ...rest } = t.toObject();
-    return rest;
-  });
+  // const filteredTournaments = tournaments.map(t => {
+  //   const { password, roomID, ...rest } = t.toObject();
+  //   return rest;
+  // });
 
-  return filteredTournaments;
+  return tournaments;
 };
 
 
